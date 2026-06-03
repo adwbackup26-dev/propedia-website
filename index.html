@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propedia.ca — The Complete Real Estate Transaction OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ink:       #05080F;
+  --ink-2:     #0B0F1A;
+  --ink-3:     #111622;
+  --ink-4:     #16202E;
+  --gold:      #BF8C2A;
+  --gold-hi:   #D9A84A;
+  --gold-pale: #F0DEB0;
+  --fog:       #7A8899;
+  --mist:      #4A5568;
+  --white:     #F2EEE6;
+  --ia-core:   #3B82F6;
+  --ia-hi:     #60A5FA;
+  --ia-glow:   rgba(59,130,246,0.12);
+  --io-core:   #10B981;
+  --io-hi:     #34D399;
+  --io-glow:   rgba(16,185,129,0.12);
+  --serif:     'Playfair Display', Georgia, serif;
+  --sans:      'DM Sans', system-ui, sans-serif;
+  --mono:      'DM Mono', monospace;
+  --ease:      cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--ink);
+  color: var(--white);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+/* ─── UTILITY ─── */
+.container  { max-width: 1080px; margin: 0 auto; padding: 0 2rem; }
+.serif      { font-family: var(--serif); }
+.mono       { font-family: var(--mono); }
+.gold       { color: var(--gold-hi); }
+.ia-col     { color: var(--ia-hi); }
+.io-col     { color: var(--io-hi); }
+.fog        { color: var(--fog); }
+
+.fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+.fade-up.visible { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.08s; }
+.d2 { transition-delay: 0.18s; }
+.d3 { transition-delay: 0.30s; }
+.d4 { transition-delay: 0.44s; }
+.d5 { transition-delay: 0.60s; }
+
+/* ─── NAV ─── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 3.5rem;
+  background: rgba(5,8,15,0.88);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(191,140,42,0.12);
+  transition: border-color 0.4s;
+}
+.logo { font-family: var(--serif); font-size: 1.35rem; font-weight: 700; color: var(--white); text-decoration: none; letter-spacing: 0.01em; }
+.logo span { color: var(--gold-hi); }
+nav ul { display: flex; gap: 2.5rem; list-style: none; }
+nav ul a { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fog); text-decoration: none; transition: color 0.2s; }
+nav ul a:hover { color: var(--white); }
+.nav-btn { background: var(--gold); color: var(--ink) !important; padding: 0.5rem 1.25rem; border-radius: 4px; font-weight: 600 !important; transition: background 0.2s !important; }
+.nav-btn:hover { background: var(--gold-hi) !important; color: var(--ink) !important; }
+
+/* ─── HERO ─── */
+#hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 9rem 2rem 7rem;
+  position: relative; overflow: hidden;
+}
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(191,140,42,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(191,140,42,0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 0%, transparent 100%);
+}
+.hero-orb {
+  position: absolute; pointer-events: none;
+  border-radius: 50%;
+  filter: blur(80px);
+}
+.orb-a { width:500px; height:500px; background:rgba(59,130,246,0.07); top:20%; left:10%; animation: drift 12s ease-in-out infinite alternate; }
+.orb-b { width:600px; height:600px; background:rgba(16,185,129,0.06); bottom:10%; right:5%; animation: drift 15s ease-in-out infinite alternate-reverse; }
+.orb-c { width:400px; height:400px; background:rgba(191,140,42,0.07); top:50%; left:50%; transform:translate(-50%,-50%); }
+@keyframes drift { from { transform: translateY(0); } to { transform: translateY(-40px); } }
+
+.hero-kicker {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold-hi); border: 1px solid rgba(191,140,42,0.35);
+  padding: 0.45rem 1.1rem; border-radius: 100px; margin-bottom: 2.5rem;
+}
+.kicker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold-hi); animation: blink 2s ease infinite; }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
+
+h1 {
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 6.5vw, 5.6rem);
+  font-weight: 800; line-height: 1.06; letter-spacing: -0.025em;
+  margin-bottom: 1.6rem; position: relative;
+}
+h1 em { color: var(--gold-hi); font-style: italic; }
+h1 .ia-em { color: var(--ia-hi); font-style: normal; }
+h1 .io-em { color: var(--io-hi); font-style: normal; }
+
+.hero-sub {
+  font-size: 1.15rem; font-weight: 300; color: var(--fog);
+  max-width: 560px; line-height: 1.75; margin-bottom: 3rem;
+}
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 4rem; }
+
+.btn-gold {
+  background: var(--gold); color: var(--ink); font-family: var(--sans);
+  font-size: 0.88rem; font-weight: 600; letter-spacing: 0.06em;
+  padding: 0.9rem 1.9rem; border-radius: 4px; border: none;
+  cursor: pointer; text-decoration: none; display: inline-block;
+  transition: background 0.2s, transform 0.2s var(--ease);
+}
+.btn-gold:hover { background: var(--gold-hi); transform: translateY(-2px); }
+
+.btn-line {
+  background: transparent; color: var(--white); font-family: var(--sans);
+  font-size: 0.88rem; font-weight: 400; letter-spacing: 0.04em;
+  padding: 0.9rem 1.9rem; border-radius: 4px;
+  border: 1px solid rgba(242,238,230,0.18);
+  cursor: pointer; text-decoration: none; display: inline-block;
+  transition: border-color 0.2s, color 0.2s, transform 0.2s var(--ease);
+}
+.btn-line:hover { border-color: var(--gold-hi); color: var(--gold-hi); transform: translateY(-2px); }
+
+/* ─── FUNNEL VISUAL (hero) ─── */
+.hero-funnel {
+  display: flex; align-items: center; gap: 0;
+  font-family: var(--mono); font-size: 0.72rem;
+  color: var(--fog); letter-spacing: 0.08em;
+  flex-wrap: wrap; justify-content: center; gap: 0.3rem;
+}
+.funnel-tag {
+  padding: 0.35rem 0.85rem; border-radius: 100px;
+  border: 1px solid; display: flex; align-items: center; gap: 0.5rem;
+}
+.funnel-ia { border-color: rgba(59,130,246,0.4); color: var(--ia-hi); background: rgba(59,130,246,0.06); }
+.funnel-io { border-color: rgba(16,185,129,0.4); color: var(--io-hi); background: rgba(16,185,129,0.06); }
+.funnel-arr { color: var(--mist); font-size: 0.9rem; }
+
+/* ─── SECTION SHELL ─── */
+.section-wrap { padding: 6rem 0; }
+.section-bg2  { background: var(--ink-2); border-top: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); }
+.section-bg3  { background: var(--ink-3); border-top: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); }
+
+/* ─── PRODUCT INTRO HEADER ─── */
+.product-header { text-align: center; padding: 5.5rem 2rem 3rem; }
+.prod-meta { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-bottom: 1rem; }
+.prod-num { font-family: var(--mono); font-size: 0.68rem; color: var(--mist); letter-spacing: 0.2em; }
+.prod-badge {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
+  padding: 0.3rem 0.9rem; border-radius: 4px;
+}
+.badge-ia { background: rgba(59,130,246,0.12); color: var(--ia-hi); border: 1px solid rgba(59,130,246,0.25); }
+.badge-io { background: rgba(16,185,129,0.12); color: var(--io-hi); border: 1px solid rgba(16,185,129,0.25); }
+.product-h2 {
+  font-family: var(--serif);
+  font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+  font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;
+  margin-bottom: 1.1rem;
+}
+.product-lead { font-size: 1.05rem; font-weight: 300; color: var(--fog); max-width: 500px; margin: 0 auto; line-height: 1.7; }
+
+/* ─── SCENE LABEL ─── */
+.scene-lbl {
+  font-family: var(--mono); font-size: 0.67rem; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--mist);
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 3rem;
+}
+.scene-lbl::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+
+/* ─── CHARACTER BLOCK ─── */
+.char-block {
+  display: grid; grid-template-columns: 340px 1fr;
+  gap: 5rem; align-items: center; max-width: 980px; margin: 0 auto;
+}
+.char-block.flip { grid-template-columns: 1fr 340px; }
+.char-block.flip .char-art { order: 2; }
+.char-block.flip .char-text { order: 1; }
+
+.char-art {
+  aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; padding: 2rem;
+}
+.art-ia { background: linear-gradient(145deg, #081428 0%, #0A1F3A 100%); border: 1px solid rgba(59,130,246,0.2); }
+.art-io { background: linear-gradient(145deg, #071A12 0%, #0A2218 100%); border: 1px solid rgba(16,185,129,0.2); }
+
+/* Phone mockup inside char art */
+.phone-mock {
+  width: 160px; background: #0D1B2A; border-radius: 20px;
+  border: 1px solid rgba(59,130,246,0.25);
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.phone-top {
+  background: #0A1525; padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(59,130,246,0.15);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.phone-top-dot { width: 6px; height: 6px; border-radius: 50%; }
+.phone-msgs { padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.msg {
+  font-family: var(--mono); font-size: 0.55rem; line-height: 1.4;
+  padding: 0.5rem 0.6rem; border-radius: 8px; max-width: 90%;
+}
+.msg-in  { background: rgba(59,130,246,0.18); color: var(--ia-hi); align-self: flex-start; border-radius: 8px 8px 8px 2px; }
+.msg-out { background: rgba(255,255,255,0.08); color: var(--fog); align-self: flex-end; border-radius: 8px 8px 2px 8px; }
+.msg-sys { background: rgba(59,130,246,0.08); color: var(--ia-hi); font-size: 0.5rem; align-self: center; border-radius: 4px; letter-spacing: 0.05em; border: 1px solid rgba(59,130,246,0.2); }
+
+/* Doc mockup */
+.doc-mock {
+  width: 200px; background: #0D1F15; border-radius: 10px;
+  border: 1px solid rgba(16,185,129,0.25); overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.doc-top {
+  background: #0A1A11; padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(16,185,129,0.15);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.doc-title-text { font-family: var(--mono); font-size: 0.55rem; color: var(--io-hi); }
+.doc-badge-lock { font-size: 0.55rem; background: rgba(16,185,129,0.15); color: var(--io-hi); padding: 0.2rem 0.5rem; border-radius: 3px; border: 1px solid rgba(16,185,129,0.3); }
+.doc-body { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.doc-field { display: flex; flex-direction: column; gap: 0.15rem; }
+.doc-field-label { font-family: var(--mono); font-size: 0.46rem; color: var(--mist); letter-spacing: 0.08em; }
+.doc-field-val { font-family: var(--mono); font-size: 0.52rem; color: var(--io-hi); background: rgba(16,185,129,0.08); padding: 0.25rem 0.4rem; border-radius: 3px; border: 1px solid rgba(16,185,129,0.15); }
+.doc-divider { height: 1px; background: rgba(16,185,129,0.1); margin: 0.25rem 0; }
+.doc-stamp { margin-top: 0.25rem; font-family: var(--mono); font-size: 0.48rem; color: var(--io-hi); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 0.4rem 0.5rem; text-align: center; letter-spacing: 0.06em; }
+
+.char-text {}
+.char-meta { font-family: var(--mono); font-size: 0.72rem; color: var(--mist); letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+.char-name { font-family: var(--serif); font-size: 2.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+.char-quote {
+  font-family: var(--serif); font-size: 1.2rem; font-style: italic;
+  font-weight: 400; line-height: 1.65; color: rgba(242,238,230,0.82);
+  padding-left: 1.2rem; margin-bottom: 1.25rem;
+  border-left: 2px solid var(--gold);
+}
+.char-copy { font-size: 0.93rem; font-weight: 300; color: var(--fog); line-height: 1.75; }
+
+/* ─── PAIN SECTION ─── */
+.pain-wrap { padding: 5rem 2rem; }
+.pain-heading { text-align: center; margin-bottom: 3.5rem; }
+.pain-heading h3 { font-family: var(--serif); font-size: 1.7rem; font-weight: 500; color: rgba(242,238,230,0.55); margin-bottom: 0.4rem; }
+.pain-heading p  { font-size: 0.85rem; color: var(--mist); }
+.pain-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; max-width: 860px; margin: 0 auto; }
+.pain-card {
+  background: var(--ink-3); border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 10px; padding: 1.75rem 1.5rem;
+  transition: border-color 0.3s;
+}
+.pain-card:hover { border-color: rgba(255,255,255,0.11); }
+.pain-emo { font-size: 1.8rem; margin-bottom: 0.9rem; }
+.pain-card h4 { font-size: 0.93rem; font-weight: 600; margin-bottom: 0.4rem; }
+.pain-card p  { font-size: 0.82rem; font-weight: 300; color: var(--fog); line-height: 1.6; }
+
+/* ─── REVEAL ─── */
+.reveal-wrap { padding: 6rem 2rem; text-align: center; position: relative; overflow: hidden; }
+.reveal-kicker { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.22em; color: var(--mist); margin-bottom: 1.25rem; }
+.reveal-h2 { font-family: var(--serif); font-size: clamp(2.4rem, 5.5vw, 4.6rem); font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 1.4rem; }
+.reveal-sub { font-size: 1.1rem; font-weight: 300; color: var(--fog); max-width: 520px; margin: 0 auto 2.5rem; line-height: 1.75; }
+.launch-pill {
+  display: inline-block; font-size: 0.78rem; color: var(--gold-pale);
+  background: rgba(191,140,42,0.08); border: 1px solid rgba(191,140,42,0.22);
+  padding: 0.5rem 1.25rem; border-radius: 100px; letter-spacing: 0.05em;
+}
+
+/* ─── PIPELINE FLOW ─── */
+.pipeline-wrap { padding: 5rem 2rem; }
+.pipeline-heading { text-align: center; margin-bottom: 3.5rem; }
+.pipeline-heading h3 { font-family: var(--serif); font-size: 1.9rem; font-weight: 600; margin-bottom: 0.4rem; }
+.pipeline-heading p  { font-size: 0.87rem; color: var(--fog); }
+
+.pipeline {
+  display: flex; align-items: stretch;
+  max-width: 960px; margin: 0 auto;
+  gap: 0;
+}
+.pipe-step {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+.pipe-step:not(:last-child)::after {
+  content: ''; position: absolute;
+  top: 2.25rem; left: calc(50% + 2rem); right: calc(-50% + 2rem);
+  height: 1px;
+}
+.pipe-ia-after::after { background: linear-gradient(to right, rgba(59,130,246,0.3), rgba(59,130,246,0.05)); }
+.pipe-io-after::after { background: linear-gradient(to right, rgba(16,185,129,0.3), rgba(16,185,129,0.05)); }
+
+.pipe-icon {
+  width: 4.5rem; height: 4.5rem; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 1.1rem; position: relative; z-index: 1;
+  flex-shrink: 0;
+}
+.pipe-ia { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.28); }
+.pipe-io { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.28); }
+
+.pipe-step h4 { font-size: 0.88rem; font-weight: 600; text-align: center; margin-bottom: 0.35rem; }
+.pipe-step p  { font-size: 0.78rem; font-weight: 300; color: var(--fog); text-align: center; line-height: 1.55; max-width: 130px; }
+
+/* ─── OUTCOME CARD ─── */
+.outcome-wrap { padding: 5.5rem 2rem; }
+.outcome-card {
+  max-width: 820px; margin: 0 auto;
+  background: var(--ink-3); border-radius: 14px;
+  padding: 3.5rem 3rem; position: relative; overflow: hidden;
+}
+.outcome-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.outcome-ia::before { background: linear-gradient(to right, var(--ia-core), var(--ia-hi), transparent); }
+.outcome-io::before { background: linear-gradient(to right, var(--io-core), var(--io-hi), transparent); }
+.outcome-lbl { font-family: var(--mono); font-size: 0.67rem; letter-spacing: 0.2em; color: var(--mist); margin-bottom: 1.5rem; }
+.outcome-quote { font-family: var(--serif); font-size: clamp(1.35rem, 2.8vw, 2rem); font-weight: 600; font-style: italic; line-height: 1.4; margin-bottom: 1.25rem; }
+.outcome-attr { font-size: 0.82rem; color: var(--fog); letter-spacing: 0.04em; margin-bottom: 2.5rem; }
+.outcome-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+.stat {
+  padding: 1.4rem 1rem; border-radius: 8px; text-align: center;
+}
+.stat-ia { background: rgba(59,130,246,0.09); border: 1px solid rgba(59,130,246,0.16); }
+.stat-io { background: rgba(16,185,129,0.09); border: 1px solid rgba(16,185,129,0.16); }
+.stat-big { font-family: var(--serif); font-size: 2rem; font-weight: 800; display: block; margin-bottom: 0.25rem; }
+.stat-ia .stat-big { color: var(--ia-hi); }
+.stat-io .stat-big { color: var(--io-hi); }
+.stat-sm { font-size: 0.78rem; color: var(--fog); font-weight: 300; }
+
+/* ─── DIVIDER ─── */
+.gold-divider { height: 1px; background: linear-gradient(to right, transparent, rgba(191,140,42,0.25), transparent); margin: 0 3rem; }
+
+/* ─── FRAMEWORK SECTION ─── */
+.framework-wrap { padding: 7rem 2rem; }
+.framework-inner { max-width: 980px; margin: 0 auto; }
+.framework-header { text-align: center; margin-bottom: 4rem; }
+.framework-header h2 { font-family: var(--serif); font-size: clamp(2rem,4vw,3.2rem); font-weight: 800; line-height: 1.1; margin-bottom: 0.75rem; }
+.framework-header p  { font-size: 1rem; font-weight: 300; color: var(--fog); max-width: 480px; margin: 0 auto; line-height: 1.7; }
+
+.framework-cols { display: grid; grid-template-columns: 1fr auto 1fr; gap: 2rem; align-items: center; }
+.fw-col {
+  background: var(--ink-3); border-radius: 12px; padding: 2.5rem 2rem;
+  border: 1px solid rgba(255,255,255,0.055);
+}
+.fw-col-ia { border-top: 2px solid var(--ia-core); }
+.fw-col-io { border-top: 2px solid var(--io-core); }
+.fw-label {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.16em;
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.fw-dot { width: 7px; height: 7px; border-radius: 50%; }
+.fw-dot-ia { background: var(--ia-hi); }
+.fw-dot-io { background: var(--io-hi); }
+.fw-col h3 { font-family: var(--serif); font-size: 1.4rem; font-weight: 700; margin-bottom: 0.75rem; }
+.fw-col p  { font-size: 0.85rem; font-weight: 300; color: var(--fog); line-height: 1.65; margin-bottom: 1.25rem; }
+.fw-list { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+.fw-list li { font-size: 0.82rem; font-weight: 300; color: var(--fog); display: flex; gap: 0.6rem; line-height: 1.45; }
+.fw-list li::before { content: '→'; flex-shrink: 0; }
+.fw-list-ia li::before { color: var(--ia-hi); }
+.fw-list-io li::before { color: var(--io-hi); }
+
+.fw-plus {
+  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+  color: var(--gold-hi); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+}
+.fw-plus-icon {
+  width: 3rem; height: 3rem; border-radius: 50%;
+  background: rgba(191,140,42,0.1); border: 1px solid rgba(191,140,42,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+}
+.fw-outcome {
+  margin-top: 2.5rem; padding: 2rem;
+  background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(16,185,129,0.06));
+  border: 1px solid rgba(191,140,42,0.18); border-radius: 10px; text-align: center;
+}
+.fw-outcome p { font-family: var(--serif); font-size: 1.15rem; font-style: italic; color: rgba(242,238,230,0.8); line-height: 1.5; }
+.fw-outcome strong { color: var(--gold-hi); font-style: normal; }
+
+/* ─── BROKERAGE + FORM ─── */
+#brokerage {
+  background: var(--ink-2);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 7rem 2rem;
+  position: relative; overflow: hidden;
+}
+.brk-glow {
+  position: absolute; bottom: -300px; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse, rgba(191,140,42,0.07) 0%, transparent 65%);
+  pointer-events: none;
+}
+.brk-inner { max-width: 1020px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start; }
+.brk-left h2 { font-family: var(--serif); font-size: clamp(1.9rem,3.8vw,3rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.4rem; }
+.brk-left h2 em { color: var(--gold-hi); font-style: italic; }
+.brk-left p { font-size: 0.95rem; font-weight: 300; color: var(--fog); line-height: 1.8; margin-bottom: 2rem; }
+.value-pills { display: flex; flex-direction: column; gap: 0.75rem; }
+.vpill {
+  display: flex; align-items: flex-start; gap: 0.85rem;
+  background: var(--ink-3); border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 8px; padding: 0.9rem 1.1rem;
+}
+.vpill-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+.vpill-text h5 { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.2rem; }
+.vpill-text p  { font-size: 0.8rem; font-weight: 300; color: var(--fog); line-height: 1.5; }
+
+/* ─── FORM ─── */
+.form-wrap {
+  background: var(--ink-3); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px; padding: 2.5rem;
+}
+.form-top-title { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; margin-bottom: 0.2rem; }
+.form-top-sub   { font-size: 0.78rem; color: var(--fog); margin-bottom: 2rem; }
+.fg { margin-bottom: 0.9rem; }
+.fg label { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fog); margin-bottom: 0.35rem; }
+.fg input, .fg select, .fg textarea {
+  width: 100%; background: var(--ink-2);
+  border: 1px solid rgba(255,255,255,0.09); border-radius: 6px;
+  padding: 0.78rem 1rem; font-family: var(--sans); font-size: 0.88rem;
+  color: var(--white); outline: none; transition: border-color 0.2s;
+  appearance: none;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--gold); }
+.fg textarea { resize: vertical; min-height: 85px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.submit-btn {
+  width: 100%; background: var(--gold); color: var(--ink);
+  font-family: var(--sans); font-size: 0.88rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1rem; border: none; border-radius: 6px;
+  cursor: pointer; margin-top: 0.5rem;
+  transition: background 0.2s, transform 0.2s var(--ease);
+}
+.submit-btn:hover { background: var(--gold-hi); transform: translateY(-1px); }
+.form-note { text-align: center; font-size: 0.73rem; color: var(--mist); margin-top: 0.9rem; line-height: 1.5; }
+
+/* ─── FOOTER ─── */
+.site-footer {
+  max-width: 1080px; margin: 0 auto; padding: 3rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.footer-brand { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; }
+.footer-brand span { color: var(--gold-hi); }
+.footer-links { display: flex; gap: 2rem; list-style: none; }
+.footer-links a { font-size: 0.78rem; color: var(--fog); text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s; }
+.footer-links a:hover { color: var(--gold-hi); }
+.footer-copy { font-size: 0.73rem; color: rgba(122,136,153,0.45); letter-spacing: 0.04em; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 860px) {
+  nav { padding: 1rem 1.5rem; }
+  nav ul { display: none; }
+  .char-block { grid-template-columns: 1fr; gap: 2.5rem; }
+  .char-block.flip .char-art { order: 0; }
+  .char-block.flip .char-text { order: 0; }
+  .pain-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .pipeline { flex-direction: column; align-items: center; gap: 1.5rem; }
+  .pipe-step::after { display: none; }
+  .pipe-step p { max-width: 280px; }
+  .outcome-stats { grid-template-columns: 1fr; }
+  .framework-cols { grid-template-columns: 1fr; }
+  .brk-inner { grid-template-columns: 1fr; gap: 3rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .site-footer { flex-direction: column; text-align: center; }
+  .footer-links { flex-wrap: wrap; justify-content: center; }
+  .gold-divider { margin: 0 1.25rem; }
+  .hero-funnel { gap: 0.4rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">Prope<span>dia</span></a>
+  <ul>
+    <li><a href="#ia">InstantAgent</a></li>
+    <li><a href="#io">InstantOffers</a></li>
+    <li><a href="#framework">The Platform</a></li>
+    <li><a href="#brokerage" class="nav-btn">Partner With Us</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-orb orb-a"></div>
+  <div class="hero-orb orb-b"></div>
+  <div class="hero-orb orb-c"></div>
+
+  <div class="hero-kicker fade-up"><span class="kicker-dot"></span>Propedia — The Complete Transaction OS</div>
+
+  <h1 class="fade-up d1">
+    From first inquiry<br>to <em>signed deal</em> —<br>fully automated.
+  </h1>
+
+  <p class="hero-sub fade-up d2">
+    Two AI products. One seamless pipeline. Propedia handles every step between a stranger seeing a listing and a client signing a contract — so your agents only show up for the moments that count.
+  </p>
+
+  <div class="hero-actions fade-up d3">
+    <a href="#ia" class="btn-gold">Explore Our Products</a>
+    <a href="#brokerage" class="btn-line">Partner With Us</a>
+  </div>
+
+  <div class="hero-funnel fade-up d4">
+    <span class="funnel-tag funnel-ia">📡 Lead Captured</span>
+    <span class="funnel-arr">→</span>
+    <span class="funnel-tag funnel-ia">🤖 AI Qualifies</span>
+    <span class="funnel-arr">→</span>
+    <span class="funnel-tag funnel-ia">📅 Showing Booked</span>
+    <span class="funnel-arr">→</span>
+    <span class="funnel-tag funnel-io">📝 Offer Drafted</span>
+    <span class="funnel-arr">→</span>
+    <span class="funnel-tag funnel-io">✅ Deal Signed</span>
+  </div>
+</section>
+
+
+<!-- ══════════════ INSTANT AGENT ══════════════ -->
+<div id="ia">
+
+  <div class="product-header">
+    <div class="prod-meta fade-up">
+      <span class="prod-num">— 01 —</span>
+      <span class="prod-badge badge-ia">InstantAgent</span>
+    </div>
+    <h2 class="product-h2 fade-up d1">
+      Your AI agent that<br>never sleeps, never misses,<br><span class="ia-col">never loses a lead.</span>
+    </h2>
+    <p class="product-lead fade-up d2">
+      A 24/7 autonomous lead pipeline that captures, qualifies, and books incoming buyers — so your calendar fills itself.
+    </p>
+  </div>
+
+  <!-- Scene 01: The Buyer -->
+  <div class="section-wrap">
+    <div class="container">
+      <p class="scene-lbl fade-up">Scene 01 — 11:14 PM, a Monday</p>
+
+      <div class="char-block">
+        <div class="char-art art-ia fade-up">
+          <div class="phone-mock">
+            <div class="phone-top">
+              <div class="phone-top-dot" style="background:#34D399"></div>
+              <div style="font-family:var(--mono);font-size:0.5rem;color:var(--ia-hi);margin-left:0.25rem;">InstantAgent · Online</div>
+            </div>
+            <div class="phone-msgs">
+              <div class="msg msg-sys">New lead from Realtor.ca</div>
+              <div class="msg msg-in">Hi! I'm interested in 1850 Rathburn Rd, Unit 412. Can I book a showing?</div>
+              <div class="msg msg-out">Hi Priya! I'm the digital assistant for HomeLife Realty. I'd love to help — are you pre-approved, or would you like info on that first?</div>
+              <div class="msg msg-in">Yes, pre-approved for $750K.</div>
+              <div class="msg msg-out">Perfect. Are you also open to similar units in Port Credit? I found 3 that match your criteria and budget.</div>
+              <div class="msg msg-in">Sure, show me!</div>
+              <div class="msg msg-sys">📍 Showing Trip generated — 3 stops, Sat 10 AM</div>
+              <div class="msg msg-out">Booked! David will meet you Saturday at 10 AM at Unit 412. Map link sent.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-text fade-up d2">
+          <p class="char-meta">Mississauga · Buyer · Pre-approved $750K</p>
+          <h3 class="char-name">Meet Priya.</h3>
+          <blockquote class="char-quote">
+            "I found a listing on Realtor.ca at 11 PM. I expected to wait three days for a callback. Instead, I was having a real conversation in 30 seconds."
+          </blockquote>
+          <p class="char-copy">
+            Priya is a first-time buyer browsing listings after her kids are in bed. She's serious, pre-approved, and ready to move fast — but she won't wait two days for an agent to call back. If she doesn't hear from someone tonight, she moves on to the next listing. And the next brokerage.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pain Points -->
+  <div class="section-bg2 pain-wrap">
+    <div class="container">
+      <div class="pain-heading fade-up">
+        <h3>The problem no agent talks about.</h3>
+        <p>Leads don't wait. Agents can't be everywhere.</p>
+      </div>
+      <div class="pain-grid">
+        <div class="pain-card fade-up">
+          <div class="pain-emo">🌙</div>
+          <h4>42% of leads inquire after 7 PM</h4>
+          <p>Peak browsing time is exactly when agents are unavailable. Those leads vanish to whoever responds first.</p>
+        </div>
+        <div class="pain-card fade-up d1">
+          <div class="pain-emo">📋</div>
+          <h4>Hours lost to lead triage</h4>
+          <p>Agents spend 60–90 minutes daily just sorting, calling back, and manually qualifying leads. Work that generates zero revenue.</p>
+        </div>
+        <div class="pain-card fade-up d2">
+          <div class="pain-emo">🗓️</div>
+          <h4>Showing logistics eat your day</h4>
+          <p>Coordinating 3 showings for one buyer — checking availability, driving routes, confirming times — is a half-day job done manually.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The Reveal -->
+  <div class="reveal-wrap">
+    <div class="container">
+      <p class="reveal-kicker fade-up">— Introducing —</p>
+      <h2 class="reveal-h2 fade-up d1"><span class="ia-col">Instant</span>Agent</h2>
+      <p class="reveal-sub fade-up d2">
+        An inbound AI router that parses every lead the moment it arrives — from Realtor.ca, Zillow, Facebook Marketplace, your website — then handles the entire qualification conversation via SMS or email. It uses vector search to match live MLS listings, builds a curated Showing Trip with an optimized driving itinerary, checks your calendar, and books everything. Automatically.
+      </p>
+      <span class="launch-pill fade-up d3">🇨🇦 &nbsp;TRREB-integrated · GTA & Mississauga launch · Pilot now open</span>
+    </div>
+  </div>
+
+  <!-- How it Works Pipeline -->
+  <div class="section-bg3 pipeline-wrap">
+    <div class="container">
+      <div class="pipeline-heading fade-up">
+        <h3>The autonomous lead pipeline.</h3>
+        <p>From inquiry to confirmed showing — zero manual steps.</p>
+      </div>
+      <div class="pipeline fade-up d1">
+        <div class="pipe-step pipe-ia-after">
+          <div class="pipe-icon pipe-ia">📡</div>
+          <h4>Inbound Capture</h4>
+          <p>Parses email leads from any platform the moment they arrive</p>
+        </div>
+        <div class="pipe-step pipe-ia-after">
+          <div class="pipe-icon pipe-ia">💬</div>
+          <h4>AI Conversation</h4>
+          <p>Engages buyer via SMS or email with hyper-local listing knowledge</p>
+        </div>
+        <div class="pipe-step pipe-ia-after">
+          <div class="pipe-icon pipe-ia">🔍</div>
+          <h4>Vector MLS Match</h4>
+          <p>Searches live listings to find the best matches for their criteria</p>
+        </div>
+        <div class="pipe-step pipe-ia-after">
+          <div class="pipe-icon pipe-ia">🗺️</div>
+          <h4>Showing Trip</h4>
+          <p>Curates a multi-stop itinerary with optimized driving route</p>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon pipe-ia">📅</div>
+          <h4>Auto-Booking</h4>
+          <p>Checks realtor's calendar and confirms appointments for both parties</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outcome -->
+  <div class="outcome-wrap">
+    <div class="container">
+      <div class="outcome-card outcome-ia fade-up">
+        <p class="outcome-lbl">— David's Saturday morning —</p>
+        <blockquote class="outcome-quote">
+          "I woke up Saturday with three confirmed showings on my calendar. I never spoke to Priya until I met her at the front door. InstantAgent had handled everything."
+        </blockquote>
+        <p class="outcome-attr">— David K., Mississauga REALTOR® with HomeLife</p>
+        <div class="outcome-stats">
+          <div class="stat stat-ia">
+            <span class="stat-big">&lt; 90s</span>
+            <span class="stat-sm">Lead response time</span>
+          </div>
+          <div class="stat stat-ia">
+            <span class="stat-big">100%</span>
+            <span class="stat-sm">Leads answered</span>
+          </div>
+          <div class="stat stat-ia">
+            <span class="stat-big">0 min</span>
+            <span class="stat-sm">Manual triage needed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- / INSTANT AGENT -->
+
+<div class="gold-divider"></div>
+
+<!-- ══════════════ INSTANT OFFERS ══════════════ -->
+<div id="io">
+
+  <div class="product-header">
+    <div class="prod-meta fade-up">
+      <span class="prod-num">— 02 —</span>
+      <span class="prod-badge badge-io">InstantOffers</span>
+    </div>
+    <h2 class="product-h2 fade-up d1">
+      A legally compliant offer,<br>drafted in minutes —<br><span class="io-col">not hours.</span>
+    </h2>
+    <p class="product-lead fade-up d2">
+      Agentic document automation that goes from client intake to signed agreement — with you in full legal control the entire time.
+    </p>
+  </div>
+
+  <!-- Scene 02: The Sunday Offer -->
+  <div class="section-wrap">
+    <div class="container">
+      <p class="scene-lbl fade-up">Scene 02 — Sunday, 7:40 PM, Unit 204</p>
+
+      <div class="char-block flip">
+        <div class="char-art art-io fade-up">
+          <div class="doc-mock">
+            <div class="doc-top">
+              <span class="doc-title-text">APS · Unit 204</span>
+              <span class="doc-badge-lock">🔒 Staged</span>
+            </div>
+            <div class="doc-body">
+              <div class="doc-field">
+                <span class="doc-field-label">Purchase Price</span>
+                <span class="doc-field-val">$698,000.00 ✦ auto-filled</span>
+              </div>
+              <div class="doc-field">
+                <span class="doc-field-label">Deposit Amount</span>
+                <span class="doc-field-val">$20,000.00 ✦ auto-filled</span>
+              </div>
+              <div class="doc-field">
+                <span class="doc-field-label">Completion Date</span>
+                <span class="doc-field-val">Aug 15, 2025 ✦ auto-filled</span>
+              </div>
+              <div class="doc-divider"></div>
+              <div class="doc-field">
+                <span class="doc-field-label">Clause 8 — Chattels</span>
+                <span class="doc-field-val">Extracted from MLS ✦</span>
+              </div>
+              <div class="doc-field">
+                <span class="doc-field-label">OREA Compliance</span>
+                <span class="doc-field-val">✓ Verified</span>
+              </div>
+              <div class="doc-divider"></div>
+              <div class="doc-stamp">⏳ Awaiting Agent Review</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-text fade-up d2">
+          <p class="char-meta">Same showing. Unit 204. She loves it.</p>
+          <h3 class="char-name">The moment of truth.</h3>
+          <blockquote class="char-quote">
+            "David, I want to make an offer tonight. Can we do that?"
+          </blockquote>
+          <p class="char-copy">
+            It's Sunday evening. In the old world, David spends 90 minutes at his kitchen table — manually copying legal descriptions, typing clause after clause, calling Priya three times to confirm details, and praying he got the deposit schedule right. The offer lands Monday morning. The seller already has another one.
+            <br><br>
+            With InstantOffers, David opens the intake form. Priya fills it out on her phone in 4 minutes. The AI scans the MLS documents, extracts the legal description, property data, and chattels — and populates a compliant Agreement of Purchase & Sale. David reviews the draft in his dashboard, adjusts the deposit, clicks Approve. Priya signs. The offer is transmitted at 9:47 PM.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pain Points -->
+  <div class="section-bg2 pain-wrap">
+    <div class="container">
+      <div class="pain-heading fade-up">
+        <h3>The offer process hasn't changed in 30 years.</h3>
+        <p>Agents are still typing the same clauses they typed in 1994.</p>
+      </div>
+      <div class="pain-grid">
+        <div class="pain-card fade-up">
+          <div class="pain-emo">⌨️</div>
+          <h4>90 minutes per offer</h4>
+          <p>Manual data entry, clause typing, and back-and-forth with clients burns time on every single transaction.</p>
+        </div>
+        <div class="pain-card fade-up d1">
+          <div class="pain-emo">⚖️</div>
+          <h4>Compliance risk is real</h4>
+          <p>A missed clause, wrong legal description, or incorrect deposit schedule can invalidate an offer or expose agents to liability.</p>
+        </div>
+        <div class="pain-card fade-up d2">
+          <div class="pain-emo">🌅</div>
+          <h4>Deals lost to delay</h4>
+          <p>The Sunday evening offer that arrives Monday morning is often the Sunday evening deal that went to the agent who could act instantly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The Reveal -->
+  <div class="reveal-wrap">
+    <div class="container">
+      <p class="reveal-kicker fade-up">— Introducing —</p>
+      <h2 class="reveal-h2 fade-up d1"><span class="io-col">Instant</span>Offers</h2>
+      <p class="reveal-sub fade-up d2">
+        A smart client intake interface triggers an AI agent that scans property documentation, extracts structural data, auto-populates every required field in a legally compliant purchase or lease agreement, and establishes digital signature spaces — all held in a secure staging dashboard for the agent to review, modify, and approve before a single signature is collected.
+      </p>
+      <span class="launch-pill fade-up d3">📋 &nbsp;OREA-compliant · Ontario-first · Now accepting brokerage pilots</span>
+    </div>
+  </div>
+
+  <!-- How it Works Pipeline -->
+  <div class="section-bg3 pipeline-wrap">
+    <div class="container">
+      <div class="pipeline-heading fade-up">
+        <h3>The document automation engine.</h3>
+        <p>From client intake to transmitted offer — in under 10 minutes.</p>
+      </div>
+      <div class="pipeline fade-up d1">
+        <div class="pipe-step pipe-io-after">
+          <div class="pipe-icon pipe-io">📋</div>
+          <h4>Smart Intake</h4>
+          <p>Client fills guided form on any device in 4 minutes flat</p>
+        </div>
+        <div class="pipe-step pipe-io-after">
+          <div class="pipe-icon pipe-io">🔬</div>
+          <h4>Doc Scan & Extract</h4>
+          <p>AI reads MLS listing documents and pulls all structural data</p>
+        </div>
+        <div class="pipe-step pipe-io-after">
+          <div class="pipe-icon pipe-io">✍️</div>
+          <h4>Auto-Populate</h4>
+          <p>Drafts compliant APS with all clauses, legal text, and signature fields</p>
+        </div>
+        <div class="pipe-step pipe-io-after">
+          <div class="pipe-icon pipe-io">🔒</div>
+          <h4>Agent Gatekeeper</h4>
+          <p>Full draft lands in secure dashboard for review, edit, and one-click approval</p>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon pipe-io">🚀</div>
+          <h4>Sign & Transmit</h4>
+          <p>Client signs digitally, offer delivered directly to listing agent</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outcome -->
+  <div class="outcome-wrap">
+    <div class="container">
+      <div class="outcome-card outcome-io fade-up">
+        <p class="outcome-lbl">— The offer that won the Sunday —</p>
+        <blockquote class="outcome-quote">
+          "Priya said 'I want to make an offer' at 7:40 PM. By 9:47 PM, a fully compliant, digitally signed Agreement of Purchase & Sale was in the listing agent's inbox. We got the unit."
+        </blockquote>
+        <p class="outcome-attr">— David K., Mississauga REALTOR®</p>
+        <div class="outcome-stats">
+          <div class="stat stat-io">
+            <span class="stat-big">8 min</span>
+            <span class="stat-sm">Intake to draft ready</span>
+          </div>
+          <div class="stat stat-io">
+            <span class="stat-big">1-click</span>
+            <span class="stat-sm">Agent approval flow</span>
+          </div>
+          <div class="stat stat-io">
+            <span class="stat-big">100%</span>
+            <span class="stat-sm">Agent legal oversight</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- / INSTANT OFFERS -->
+
+
+<!-- ══════════════ FRAMEWORK ══════════════ -->
+<section id="framework" class="section-bg2 framework-wrap">
+  <div class="container">
+    <div class="framework-inner">
+      <div class="framework-header fade-up">
+        <h2>The <em style="color:var(--gold-hi);font-style:italic;">front-to-back</em><br>transaction framework.</h2>
+        <p>Most proptech solves one problem. Propedia owns the entire deal — from the first message to the final signature.</p>
+      </div>
+
+      <div class="framework-cols fade-up d1">
+        <div class="fw-col fw-col-ia">
+          <p class="fw-label"><span class="fw-dot fw-dot-ia"></span><span class="ia-col">InstantAgent — Top of Funnel</span></p>
+          <h3>Strangers become<br>booked showings.</h3>
+          <p>The AI captures and qualifies every inbound lead, 24/7, across every platform — handling the entire conversation before a single agent lifts a finger.</p>
+          <ul class="fw-list fw-list-ia">
+            <li>Instant response to every lead, any hour</li>
+            <li>Qualification, objection handling, MLS matching</li>
+            <li>Curated Showing Trip with optimized routing</li>
+            <li>Calendar integration and auto-booking</li>
+          </ul>
+        </div>
+
+        <div class="fw-plus fade-up d2">
+          <div class="fw-plus-icon">+</div>
+          <span>Bundled</span>
+        </div>
+
+        <div class="fw-col fw-col-io fade-up d1">
+          <p class="fw-label"><span class="fw-dot fw-dot-io"></span><span class="io-col">InstantOffers — Bottom of Funnel</span></p>
+          <h3>Showings become<br>signed deals.</h3>
+          <p>The moment a buyer is ready, InstantOffers drafts a compliant offer in minutes — keeping the agent in full legal control through a secure review gateway.</p>
+          <ul class="fw-list fw-list-io">
+            <li>Smart client intake — 4 minutes, any device</li>
+            <li>AI-powered document extraction and population</li>
+            <li>Secure agent gatekeeper before any signature</li>
+            <li>Digital signing and direct transmission</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="fw-outcome fade-up d2">
+        <p>Together, they give every agent on your roster a <strong>complete deal machine</strong> — from first inquiry to executed contract, with zero bottlenecks and absolute compliance control.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════ BROKERAGE CTA ══════════════ -->
+<section id="brokerage">
+  <div class="brk-glow"></div>
+  <div class="container">
+    <div class="brk-inner">
+      <div class="brk-left fade-up">
+        <p style="font-family:var(--mono);font-size:0.68rem;letter-spacing:0.18em;color:var(--gold-hi);text-transform:uppercase;margin-bottom:1rem;">For Agents & Brokerages</p>
+        <h2>If you run a brokerage,<br><em>this changes everything.</em></h2>
+        <p>
+          Propedia isn't a lead-gen tool or a template library. It's a full transaction operating system built specifically for the GTA market by people who operate inside it. Every listing on TRREB, every MLS document, every OREA clause — we've designed around the reality of how deals actually happen here.
+        </p>
+
+        <div class="value-pills">
+          <div class="vpill">
+            <div class="vpill-icon">🤖</div>
+            <div class="vpill-text">
+              <h5>White-label InstantAgent under your brand</h5>
+              <p>Your buyers interact with your brokerage — powered by Propedia's AI engine behind the scenes.</p>
+            </div>
+          </div>
+          <div class="vpill">
+            <div class="vpill-icon">📋</div>
+            <div class="vpill-text">
+              <h5>InstantOffers for every agent on your roster</h5>
+              <p>Every agent drafts compliant offers in minutes, not hours — with zero compromise on your legal oversight.</p>
+            </div>
+          </div>
+          <div class="vpill">
+            <div class="vpill-icon">📊</div>
+            <div class="vpill-text">
+              <h5>Live pipeline dashboard for team leaders</h5>
+              <p>See every lead, every conversation, and every pending offer across your entire team in real time.</p>
+            </div>
+          </div>
+          <div class="vpill">
+            <div class="vpill-icon">🏘️</div>
+            <div class="vpill-text">
+              <h5>Native TRREB & MLS integration</h5>
+              <p>Built on PropTx/Matrix. Live listing data, accurate document extraction, no manual imports.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM -->
+      <div class="form-wrap fade-up d1">
+        <h3 class="form-top-title">Request a Partner Demo</h3>
+        <p class="form-top-sub">We'll reach out within 24 business hours.</p>
+
+        <div class="form-row">
+          <div class="fg"><label>First Name</label><input type="text" placeholder="First"></div>
+          <div class="fg"><label>Last Name</label><input type="text" placeholder="Last"></div>
+        </div>
+        <div class="fg"><label>Email Address</label><input type="email" placeholder="you@yourbrokerage.com"></div>
+        <div class="fg"><label>Phone Number</label><input type="tel" placeholder="+1 (647) ___-____"></div>
+        <div class="fg"><label>Brokerage / Team Name</label><input type="text" placeholder="Your brokerage or team"></div>
+        <div class="fg">
+          <label>Your Role</label>
+          <select>
+            <option value="" disabled selected>Select your role</option>
+            <option>Independent REALTOR®</option>
+            <option>Team Leader</option>
+            <option>Broker of Record</option>
+            <option>Brokerage Owner / Franchise</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Number of Agents on Your Roster</label>
+          <select>
+            <option value="" disabled selected>Select a range</option>
+            <option>Just me (solo agent)</option>
+            <option>2–10 agents</option>
+            <option>11–50 agents</option>
+            <option>50+ agents</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>What's your biggest bottleneck right now?</label>
+          <textarea placeholder="Lead response time? Offer paperwork? Both? Tell us what's costing you deals..."></textarea>
+        </div>
+        <button class="submit-btn" onclick="this.textContent='✓ Submitted — Talk soon!';this.style.background='var(--io-core)';this.disabled=true;">
+          Book My Demo →
+        </button>
+        <p class="form-note">No pitch decks. No pressure. Just a real conversation about what Propedia can do for your team.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-brand">Prope<span>dia</span>.ca</div>
+  <ul class="footer-links">
+    <li><a href="#ia">InstantAgent</a></li>
+    <li><a href="#io">InstantOffers</a></li>
+    <li><a href="#framework">Platform</a></li>
+    <li><a href="#brokerage">Partner</a></li>
+    <li><a href="mailto:hello@propedia.ca">Contact</a></li>
+  </ul>
+  <p class="footer-copy">© 2025 Propedia Inc. · Mississauga, Ontario · TRREB Member</p>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+  window.addEventListener('scroll', () => {
+    document.querySelector('nav').style.borderBottomColor =
+      window.scrollY > 80 ? 'rgba(191,140,42,0.28)' : 'rgba(191,140,42,0.12)';
+  });
+</script>
+</body>
+</html>

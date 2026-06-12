@@ -84,25 +84,26 @@ export default async function handler(req, res) {
   // ── Build RESO URL ───────────────────────────────────────────────────────
   // $select: only fetch fields we actually render — reduces payload size
   const select = [
-    'ListingKey',
-    'ListingId',
-    'StandardStatus',
-    'TransactionType',
-    'ListPrice',
-    'UnparsedAddress',
-    'StreetNumber',
-    'StreetName',
-    'City',
-    'PostalCode',
-    'BedroomsTotal',
-    'BathroomsTotalInteger',
-    'PropertySubType',
-    'DaysOnMarket',
-    'InternetEntireListingDisplayYN',
-    'ListAgentFullName',
-    'ListOfficeName',
-    'ModificationTimestamp',
-  ].join(',');
+  'ListingKey',
+  'ListingId',
+  'StandardStatus',
+  'TransactionType',
+  'ListPrice',
+  'UnparsedAddress',
+  'StreetNumber',
+  'StreetName',
+  'City',
+  'PostalCode',
+  'BedroomsTotal',
+  'BathroomsTotalInteger',
+  'PropertySubType',
+  'DaysOnMarket',
+  'InternetEntireListingDisplayYN',
+  'ListAgentFullName',
+  'ListOfficeName',
+  'ModificationTimestamp',
+  'Media',  // ← ADD THIS BACK
+].join(',');
   
   const filterString = filters.join(' and ');
   const orderby = `${sortBy} ${sortDir}`;

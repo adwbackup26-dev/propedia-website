@@ -47,14 +47,12 @@ export default async function handler(req, res) {
     'ListAgentFullName', 'ListAgentPhone', 'ListAgentEmail',
     'ListOfficeName', 'ListOfficePhone',
     'InternetEntireListingDisplayYN',
-    'Media',
   ].join(',');
 
   const url = new URL(RESO_BASE);
   url.searchParams.set('$filter',  `ListingKey eq '${key}' and InternetEntireListingDisplayYN eq true`);
   url.searchParams.set('$top',     '1');
   url.searchParams.set('$select',  select);
-  url.searchParams.set('$expand',  'Media');
 
   try {
     const upstream = await fetch(url.toString(), {

@@ -111,15 +111,22 @@ export default async function handler(req, res) {
     'PriceChangeTimestamp',
     'Media',
   ].join(',');
-
-  const url = new URL(RESO_BASE);
-  url.searchParams.set('$filter',  filters.join(' and '));
-  url.searchParams.set('$top',     top.toString());
-  url.searchParams.set('$skip',    skip.toString());
-  url.searchParams.set('$orderby', `${sortBy} ${sortDir}`);
-  url.searchParams.set('$select',  select);
-  url.searchParams.set('$expand',  'Media');
-  url.searchParams.set('$count',   'true');
+  
+  const filterString = filters.join(' and ');
+  const orderby = `${sortBy} ${sortDir}`;
+  
+  // Build query string manually to avoid URLSearchParams encoding issues
+  const queryParts = [
+    `$filter=${encodeURIComponent(filterString)}`,
+    `$top=${top}`,
+    `$skip=${skip}`,
+    `$orderby=${encodeURIComponent(orderby)}`,
+    `$select=${encodeURIComponent(select)}`,
+    `$expand=Media`,
+    `$count=true`,
+  ];
+  
+  const url = new URL(`${RESO_BASE}?${queryParts.join('&')}`);
 
   // ── Proxy request to TRREB ───────────────────────────────────────────────
   try {

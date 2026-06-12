@@ -102,7 +102,6 @@ export default async function handler(req, res) {
     'BathroomsTotalInteger',
     'PropertyType',
     'PropertySubType',
-    'LivingArea',
     'DaysOnMarket',
     'InternetEntireListingDisplayYN',
     'ListAgentFullName',

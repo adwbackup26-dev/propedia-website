@@ -122,8 +122,8 @@ export default async function handler(req, res) {
     `$skip=${skip}`,
     `$orderby=${encodeURIComponent(orderby)}`,
     `$select=${encodeURIComponent(select)}`,
-    `$expand=Media`,
     `$count=true`,
+  
   ];
   
   const url = new URL(`${RESO_BASE}?${queryParts.join('&')}`);

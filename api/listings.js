@@ -85,32 +85,31 @@ export default async function handler(req, res) {
   // $select: only fetch fields we actually render — reduces payload size
   // NOTE: Media comes as nested array in response, not as separate $select field
   const select = [
-    'ListingKey',
-    'ListingId',
-    'StandardStatus',
-    'TransactionType',
-    'ListPrice',
-    'OriginalListPrice',
-    'UnparsedAddress',
-    'StreetNumber',
-    'StreetName',
-    'UnitNumber',
-    'City',
-    'StateOrProvince',
-    'PostalCode',
-    'BedroomsTotal',
-    'BathroomsTotalInteger',
-    'PropertyType',
-    'PropertySubType',
-    'DaysOnMarket',
-    'InternetEntireListingDisplayYN',
-    'ListAgentFullName',
-    'ListOfficeName',
-    'ModificationTimestamp',
-    'PriceChangeTimestamp',
-    'PhotosCount',
-    'Media',  // ← Media comes as nested array in response
-  ].join(',');
+  'ListingKey',
+  'ListingId',
+  'StandardStatus',
+  'TransactionType',
+  'ListPrice',
+  'OriginalListPrice',
+  'UnparsedAddress',
+  'StreetNumber',
+  'StreetName',
+  'UnitNumber',
+  'City',
+  'StateOrProvince',
+  'PostalCode',
+  'BedroomsTotal',
+  'BathroomsTotalInteger',
+  'PropertyType',
+  'PropertySubType',
+  'DaysOnMarket',
+  'InternetEntireListingDisplayYN',
+  'ListAgentFullName',
+  'ListOfficeName',
+  'ModificationTimestamp',
+  'PriceChangeTimestamp',
+  'Media',  // ← KEEP THIS ONLY
+].join(',');
 
   const filterString = filters.join(' and ');
   const orderby = `${sortBy} ${sortDir}`;

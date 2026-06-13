@@ -72,9 +72,18 @@ export default async function handler(req, res) {
     const data = await upstream.json();
 
     // ── Process media records ────────────────────────────────────────────
-    // Sort by Order and PreferredPhotoYN to get preferred photo first
-    const photos = (data.value || [])
+    // Deduplicate by MediaURL first, then sort by Order and PreferredPhotoYN
+    const uniquePhotos = new Map();
+    
+    (data.value || [])
       .filter(m => m.MediaCategory === 'Photo')  // Only photos, not documents
+      .forEach(m => {
+        if (m.MediaURL && !uniquePhotos.has(m.MediaURL)) {
+          uniquePhotos.set(m.MediaURL, m);
+        }
+      });
+
+    const photos = Array.from(uniquePhotos.values())
       .sort((a, b) => {
         // Preferred photo first
         if (a.PreferredPhotoYN && !b.PreferredPhotoYN) return -1;

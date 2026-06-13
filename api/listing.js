@@ -1,6 +1,6 @@
 // api/listing.js
 // Vercel serverless function — fetches a single listing by ListingKey.
-// Powers the /listings/:listingKey detail page.
+// Powers the /listing/:listingKey detail page.
 //
 // GET /api/listing?listingKey=XXXXXXXXXX
 //
@@ -25,7 +25,6 @@ export default async function handler(req, res) {
   if (!listingKey) return res.status(400).json({ error: 'listingKey query parameter is required' });
 
   // ── Build $select for detail page ────────────────────────────────────────
-  // Much richer than the card $select
   const select = [
     'ListingKey', 'ListingId', 'StandardStatus', 'TransactionType',
     'ListPrice', 'OriginalListPrice', 'ClosePrice',

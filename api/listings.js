@@ -108,7 +108,6 @@ export default async function handler(req, res) {
   'ListOfficeName',
   'ModificationTimestamp',
   'PriceChangeTimestamp',
-  'Media',  // ← KEEP THIS ONLY
 ].join(',');
 
   const filterString = filters.join(' and ');

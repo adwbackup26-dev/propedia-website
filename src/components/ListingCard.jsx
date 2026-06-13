@@ -1,6 +1,6 @@
 // src/components/ListingCard.jsx — dark photo-first card with carousel + mortgage estimate
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvailableButton from './AvailableButton.jsx';
 import { formatPrice, formatAddress, formatCityLine, formatDOM, domIsHigh,
@@ -22,12 +22,34 @@ export function ListingCardSkeleton() {
 export default function ListingCard({ listing, isSaved, onSave, userPrefs = null, listView = false }) {
   const navigate = useNavigate();
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [photos, setPhotos] = useState([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
 
-  // Sort photos by Order
-  const photos = (listing.Media || [])
-    .filter(m => m.MediaURL)
-    .sort((a, b) => (a.Order ?? 999) - (b.Order ?? 999));
-  const photo     = photos[photoIdx]?.MediaURL || null;
+  // ── Fetch photos from /api/photos endpoint ──────────────────────────
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        setLoadingPhotos(true);
+        const res = await fetch(`/api/photos?listingKey=${listing.ListingKey}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPhotos(data.photos || []);
+        } else {
+          console.warn(`Failed to fetch photos for ${listing.ListingKey}:`, res.status);
+          setPhotos([]);
+        }
+      } catch (err) {
+        console.error(`Failed to fetch photos for ${listing.ListingKey}:`, err);
+        setPhotos([]);
+      } finally {
+        setLoadingPhotos(false);
+      }
+    };
+    
+    fetchPhotos();
+  }, [listing.ListingKey]);
+
+  const photo     = photos[photoIdx]?.url || null;
   const photoCount = photos.length;
 
   const price      = listing.ListPrice;
@@ -62,7 +84,7 @@ export default function ListingCard({ listing, isSaved, onSave, userPrefs = null
         {photo ? (
           <img src={photo} alt={address}
             style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transition:'transform .4s' }}
-            loading="lazy" decoding="async"/>
+            loading="lazy" decoding="async" onError={e => e.target.style.display='none'}/>
         ) : (
           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <i className="ti ti-building-estate" style={{ fontSize:38, color:'rgba(255,255,255,.08)' }} aria-hidden="true"/>

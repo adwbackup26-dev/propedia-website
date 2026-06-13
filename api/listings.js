@@ -4,7 +4,7 @@
 //
 // GET /api/listings?page=1&limit=20&transactionType=For+Sale&minPrice=...
 //
-// Required env var:  TRREB_TOKEN   (IDX bearer token, set in Vercel dashboard)
+// Required env var:  TRREB_IDX_TOKEN   (IDX bearer token, set in Vercel dashboard)
 // Optional env vars: none for this file
 
 const RESO_BASE = 'https://query.ampre.ca/odata/Property';
@@ -83,30 +83,38 @@ export default async function handler(req, res) {
 
   // ── Build RESO URL ───────────────────────────────────────────────────────
   // $select: only fetch fields we actually render — reduces payload size
+  // NOTE: Media comes as nested array in response, not as separate $select field
   const select = [
-  'ListingKey',
-  'ListingId',
-  'StandardStatus',
-  'TransactionType',
-  'ListPrice',
-  'UnparsedAddress',
-  'StreetNumber',
-  'StreetName',
-  'City',
-  'PostalCode',
-  'BedroomsTotal',
-  'BathroomsTotalInteger',
-  'PropertySubType',
-  'DaysOnMarket',
-  'InternetEntireListingDisplayYN',
-  'ListAgentFullName',
-  'ListOfficeName',
-  'ModificationTimestamp',
-].join(',');
-  
+    'ListingKey',
+    'ListingId',
+    'StandardStatus',
+    'TransactionType',
+    'ListPrice',
+    'OriginalListPrice',
+    'UnparsedAddress',
+    'StreetNumber',
+    'StreetName',
+    'UnitNumber',
+    'City',
+    'StateOrProvince',
+    'PostalCode',
+    'BedroomsTotal',
+    'BathroomsTotalInteger',
+    'PropertyType',
+    'PropertySubType',
+    'DaysOnMarket',
+    'InternetEntireListingDisplayYN',
+    'ListAgentFullName',
+    'ListOfficeName',
+    'ModificationTimestamp',
+    'PriceChangeTimestamp',
+    'PhotosCount',
+    'Media',  // ← Media comes as nested array in response
+  ].join(',');
+
   const filterString = filters.join(' and ');
   const orderby = `${sortBy} ${sortDir}`;
-  
+
   // Build query string manually to avoid URLSearchParams encoding issues
   const queryParts = [
     `$filter=${encodeURIComponent(filterString)}`,
@@ -115,9 +123,8 @@ export default async function handler(req, res) {
     `$orderby=${encodeURIComponent(orderby)}`,
     `$select=${encodeURIComponent(select)}`,
     `$count=true`,
-  
   ];
-  
+
   const url = new URL(`${RESO_BASE}?${queryParts.join('&')}`);
 
   // ── Proxy request to TRREB ───────────────────────────────────────────────

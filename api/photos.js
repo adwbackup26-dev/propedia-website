@@ -72,18 +72,17 @@ export default async function handler(req, res) {
     const data = await upstream.json();
 
     // ── Process media records ────────────────────────────────────────────
-    // Deduplicate by MediaURL first, then sort by Order and PreferredPhotoYN
-    const uniquePhotos = new Map();
-    
-    (data.value || [])
-      .filter(m => m.MediaCategory === 'Photo')  // Only photos, not documents
-      .forEach(m => {
-        if (m.MediaURL && !uniquePhotos.has(m.MediaURL)) {
-          uniquePhotos.set(m.MediaURL, m);
-        }
-      });
-
-    const photos = Array.from(uniquePhotos.values())
+    // TRREB returns 5 variants per photo (original, -l, -m, -nw, -t)
+    // Only keep the ORIGINAL (no suffix) — discard all size variants
+    const photos = (data.value || [])
+      .filter(m => {
+        // Only photos, not documents
+        if (m.MediaCategory !== 'Photo') return false;
+        if (!m.MediaURL) return false;
+        // ONLY keep original photos (mediaKey must not end with -l, -m, -nw, -t)
+        if (m.MediaKey.match(/-(l|m|nw|t)$/)) return false;
+        return true;
+      })
       .sort((a, b) => {
         // Preferred photo first
         if (a.PreferredPhotoYN && !b.PreferredPhotoYN) return -1;

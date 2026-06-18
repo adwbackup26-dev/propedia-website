@@ -7,10 +7,14 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   const token = process.env.TRREB_IDX_TOKEN || process.env.TRREB_TOKEN;
-  if (!token) return res.status(500).json({ error: 'TRREB_IDX_TOKEN not configured' });
+  if (!token) {
+    return res.status(500).json({ error: 'TRREB_IDX_TOKEN not configured in Vercel environment variables.' });
+  }
 
   const {
     page            = '1',
@@ -28,7 +32,7 @@ export default async function handler(req, res) {
     sortDir         = 'desc',
   } = req.query;
 
-  const top  = Math.min(parseInt(limit) || 20, 50);
+  const top  = Math.min(parseInt(limit)  || 20, 50);
   const skip = (Math.max(parseInt(page) || 1, 1) - 1) * top;
 
   const filters = [
@@ -53,42 +57,51 @@ export default async function handler(req, res) {
     const prefix = postalCode.replace(/\s/g, '').substring(0, 3).toUpperCase();
     filters.push(`startswith(PostalCode,'${prefix}')`);
   }
+
   if (search) {
     const escaped = search.replace(/'/g, "''");
     filters.push(`contains(StreetName,'${escaped}')`);
   }
 
   const select = [
-    'ListingKey', 'ListingId', 'StandardStatus', 'TransactionType',
-    'ListPrice', 'OriginalListPrice', 'ClosePrice',
-    'UnparsedAddress', 'StreetNumber', 'StreetName',
-    'UnitNumber', 'City', 'StateOrProvince', 'PostalCode',
-    'BedroomsTotal', 'BathroomsTotalInteger',
-    'PropertyType', 'PropertySubType',
-    'LivingArea', 'DaysOnMarket',
+    'ListingKey',
+    'ListingId',
+    'StandardStatus',
+    'TransactionType',
+    'ListPrice',
+    'OriginalListPrice',
+    'ClosePrice',
+    'UnparsedAddress',
+    'StreetNumber',
+    'StreetName',
+    'UnitNumber',
+    'City',
+    'StateOrProvince',
+    'PostalCode',
+    'BedroomsTotal',
+    'BathroomsTotalInteger',
+    'PropertyType',
+    'PropertySubType',
+    'LivingArea',
+    'DaysOnMarket',
     'InternetEntireListingDisplayYN',
-    'ListAgentFullName', 'ListOfficeName',
-    'ModificationTimestamp', 'PriceChangeTimestamp',
+    'ListAgentFullName',
+    'ListOfficeName',
+    'ModificationTimestamp',
+    'PriceChangeTimestamp',
   ].join(',');
 
-  const filterString = filters.join(' and ');
-
-  // CRITICAL — manual query string only, never URLSearchParams
-  // URLSearchParams encodes spaces as + but TRREB requires %20
-  const queryParts = [
-    `$filter=${encodeURIComponent(filterString)}`,
-    `$top=${top}`,
-    `$skip=${skip}`,
-    `$orderby=${encodeURIComponent(`${sortBy} ${sortDir}`)}`,
-    `$select=${encodeURIComponent(select)}`,
-    `$expand=Media`,
-    `$count=true`,
-  ];
-
-  const url = `${RESO_BASE}?${queryParts.join('&')}`;
+  const url = new URL(RESO_BASE);
+  url.searchParams.set('$filter',  filters.join(' and '));
+  url.searchParams.set('$top',     top.toString());
+  url.searchParams.set('$skip',    skip.toString());
+  url.searchParams.set('$orderby', `${sortBy} ${sortDir}`);
+  url.searchParams.set('$select',  select);
+  url.searchParams.set('$expand',  'Media');
+  url.searchParams.set('$count',   'true');
 
   try {
-    const upstream = await fetch(url, {
+    const upstream = await fetch(url.toString(), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -109,6 +122,7 @@ export default async function handler(req, res) {
     }
 
     const data = await upstream.json();
+
     const listings = (data.value || []).filter(
       l => l.InternetEntireListingDisplayYN === true
     );
@@ -123,6 +137,9 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('[api/listings] Fetch error:', err);
-    return res.status(500).json({ error: 'Failed to reach TRREB API', detail: err.message });
+    return res.status(500).json({
+      error: 'Failed to reach TRREB API',
+      detail: err.message,
+    });
   }
 }

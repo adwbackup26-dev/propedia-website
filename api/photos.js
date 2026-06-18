@@ -20,7 +20,6 @@ export default async function handler(req, res) {
   }
 
   // ── Auth check ───────────────────────────────────────────────────────────
-  // IDX token — same token as listings endpoint
   const token = process.env.TRREB_IDX_TOKEN || process.env.TRREB_TOKEN;
   if (!token) {
     return res.status(500).json({ error: 'TRREB_IDX_TOKEN not configured in Vercel environment variables.' });
@@ -34,7 +33,6 @@ export default async function handler(req, res) {
   }
 
   // ── Build OData filter for Media resource ────────────────────────────────
-  // Filter: ResourceRecordKey eq '{ListingKey}' and ResourceName eq 'Property'
   const filterString = `ResourceRecordKey eq '${listingKey}' and ResourceName eq 'Property'`;
   const orderby = 'ModificationTimestamp desc,MediaKey';
 
@@ -42,6 +40,7 @@ export default async function handler(req, res) {
   const queryParts = [
     `$filter=${encodeURIComponent(filterString)}`,
     `$orderby=${encodeURIComponent(orderby)}`,
+    `$top=200`,
     `$select=MediaKey,MediaURL,Order,PreferredPhotoYN,MediaCategory,ModificationTimestamp`,
   ];
 
@@ -76,18 +75,15 @@ export default async function handler(req, res) {
     // Only keep the ORIGINAL (no suffix) — discard all size variants
     const photos = (data.value || [])
       .filter(m => {
-        // Only photos, not documents
         if (m.MediaCategory !== 'Photo') return false;
         if (!m.MediaURL) return false;
-        // ONLY keep original photos (mediaKey must not end with -l, -m, -nw, -t)
+        // Discard -l, -m, -nw, -t size variants — keep originals only
         if (m.MediaKey.match(/-(l|m|nw|t)$/)) return false;
         return true;
       })
       .sort((a, b) => {
-        // Preferred photo first
         if (a.PreferredPhotoYN && !b.PreferredPhotoYN) return -1;
         if (!a.PreferredPhotoYN && b.PreferredPhotoYN) return 1;
-        // Then by Order
         return (a.Order || 999) - (b.Order || 999);
       })
       .map(m => ({

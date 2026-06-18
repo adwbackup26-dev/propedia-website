@@ -11,7 +11,20 @@ export default async function handler(req, res) {
   const token = process.env.TRREB_IDX_TOKEN || process.env.TRREB_TOKEN;
   if (!token) return res.status(500).json({ error: 'No token' });
 
-  const { page = '1', limit = '20', transactionType = 'For Sale', minPrice = '', maxPrice = '', minBeds = '', minBaths = '', propertySubType = '', city = '', search = '', sortBy = 'ModificationTimestamp', sortDir = 'desc' } = req.query;
+  const {
+    page            = '1',
+    limit           = '20',
+    transactionType = 'For Sale',
+    minPrice        = '',
+    maxPrice        = '',
+    minBeds         = '',
+    minBaths        = '',
+    propertySubType = '',
+    city            = '',
+    search          = '',
+    sortBy          = 'ModificationTimestamp',
+    sortDir         = 'desc',
+  } = req.query;
 
   const top  = Math.min(parseInt(limit) || 20, 50);
   const skip = (Math.max(parseInt(page) || 1, 1) - 1) * top;
@@ -19,7 +32,9 @@ export default async function handler(req, res) {
   const filters = [
     'InternetEntireListingDisplayYN eq true',
     "StandardStatus eq 'Active'",
-    transactionType === 'For Lease' ? "TransactionType eq 'For Lease'" : "TransactionType eq 'For Sale'",
+    transactionType === 'For Lease'
+      ? "TransactionType eq 'For Lease'"
+      : "TransactionType eq 'For Sale'",
   ];
 
   if (minPrice)        filters.push(`ListPrice ge ${parseInt(minPrice)}`);
@@ -28,18 +43,18 @@ export default async function handler(req, res) {
   if (minBaths)        filters.push(`BathroomsTotalInteger ge ${parseInt(minBaths)}`);
   if (propertySubType) filters.push(`PropertySubType eq '${propertySubType}'`);
   if (city)            filters.push(`City eq '${city}'`);
-  if (search)          filters.push(`contains(StreetName,'${search.replace(/'/g,"''")}')`);
+  if (search)          filters.push(`contains(StreetName,'${search.replace(/'/g, "''")}')`);
 
   const select = [
-    'ListingKey','ListingId','StandardStatus','TransactionType',
-    'ListPrice','OriginalListPrice',
-    'UnparsedAddress','StreetNumber','StreetName','UnitNumber',
-    'City','StateOrProvince','PostalCode',
-    'BedroomsTotal','BathroomsTotalInteger',
-    'PropertyType','PropertySubType',
-    'LivingArea','DaysOnMarket',
+    'ListingKey', 'ListingId', 'StandardStatus', 'TransactionType',
+    'ListPrice', 'OriginalListPrice',
+    'UnparsedAddress', 'StreetNumber', 'StreetName', 'UnitNumber',
+    'City', 'StateOrProvince', 'PostalCode',
+    'BedroomsTotal', 'BathroomsTotalInteger',
+    'PropertyType', 'PropertySubType',
+    'LivingAreaRange', 'DaysOnMarket',
     'InternetEntireListingDisplayYN',
-    'ListAgentFullName','ListOfficeName',
+    'ListAgentFullName', 'ListOfficeName',
     'ModificationTimestamp',
   ].join(',');
 
@@ -67,22 +82,31 @@ export default async function handler(req, res) {
     if (!r.ok) {
       const body = await r.text();
       console.error('[listings] error:', r.status, body);
-      return res.status(r.status).json({ error: 'TRREB API returned an error', status: r.status, detail: body.substring(0,500) });
+      return res.status(r.status).json({
+        error: 'TRREB API returned an error',
+        status: r.status,
+        detail: body.substring(0, 500),
+      });
     }
 
     const data = await r.json();
-    const listings = (data.value || []).filter(l => l.InternetEntireListingDisplayYN === true);
+    const listings = (data.value || []).filter(
+      l => l.InternetEntireListingDisplayYN === true
+    );
 
     return res.status(200).json({
       listings,
       total: data['@odata.count'] ?? listings.length,
-      page: parseInt(page),
+      page:  parseInt(page),
       limit: top,
       pages: Math.ceil((data['@odata.count'] ?? listings.length) / top),
     });
 
   } catch (err) {
     console.error('[listings] fetch error:', err);
-    return res.status(500).json({ error: 'Failed to reach TRREB API', detail: err.message });
+    return res.status(500).json({
+      error: 'Failed to reach TRREB API',
+      detail: err.message,
+    });
   }
 }

@@ -170,7 +170,7 @@ export default function ListingDetailPage() {
 
         {/* Agent info */}
         <div style={{ padding:16, background:'var(--bg-2)', borderRadius:8 }}>
-          <h3 style={{ fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'.1em', color:'var(--text-4)', marginBottom:8 }}>Listing Agent</h3>
+          <h3 style={{ fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'.1em', color:'var(--text-4)', marginBottom:8 }}>Listing Brokerage</h3>
           <p style={{ fontSize:14, fontWeight:600, marginBottom:2 }}>{listing.ListAgentFullName || ''}</p>
           <p style={{ fontSize:12, color:'var(--text-4)' }}>{listing.ListOfficeName || ''}</p>
           {listing.ListingId && <p style={{ fontSize:11, color:'var(--text-4)', marginTop:8 }}>MLS® {listing.ListingId}</p>}

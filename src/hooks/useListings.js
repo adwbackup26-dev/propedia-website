@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const DEFAULT_FILTERS = {
   transactionType: 'For Sale',
-  propertyType:    '',
+  propertyType:    'Residential',
   minPrice:        '',
   maxPrice:        '',
   minBeds:         '',

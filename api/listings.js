@@ -38,10 +38,12 @@ export default async function handler(req, res) {
       : "TransactionType eq 'For Sale'",
   ];
 
-  // Commercial tabs: exclude residential. Residential tabs: no PropertyType filter —
-  // TRREB uses values like 'Residential Freehold'/'Residential Condo & Other' so
-  // eq 'Residential' would return 0 results.
-  if (propertyType === 'Commercial') filters.push("PropertyType ne 'Residential'");
+  // TRREB PropertyType values: 'Residential Freehold', 'Residential Condo & Other', 'Commercial'
+  if (propertyType === 'Residential') {
+    filters.push("(PropertyType eq 'Residential Freehold' or PropertyType eq 'Residential Condo & Other')");
+  } else if (propertyType === 'Commercial') {
+    filters.push("PropertyType eq 'Commercial'");
+  }
 
   if (minPrice)        filters.push(`ListPrice ge ${parseInt(minPrice)}`);
   if (maxPrice)        filters.push(`ListPrice le ${parseInt(maxPrice)}`);

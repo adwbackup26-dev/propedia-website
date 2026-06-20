@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import AvailableButton from '../components/AvailableButton.jsx';
+import ListingCard from '../components/ListingCard.jsx';
 import { useCompare } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
 import '../styles/listings.css';
@@ -689,30 +690,9 @@ export default function ListingDetailPage() {
           <div style={{ marginTop:24 }}>
             <div style={{ ...sh, marginBottom:14 }}><i className="ti ti-home-search" style={shI}/>Similar properties</div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }} className="similar-grid">
-              {similar.map(l => {
-                const addr = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || l.UnparsedAddress || '—';
-                return (
-                  <Link key={l.ListingKey} to={`/listing/${l.ListingKey}`} style={{ textDecoration:'none', color:'inherit' }}>
-                    <div style={{ background:'#161719', borderRadius:10, border:'1px solid rgba(255,255,255,.06)', overflow:'hidden', transition:'border-color .2s' }}
-                      onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(0,180,168,.4)'}
-                      onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(255,255,255,.06)'}
-                    >
-                      <div style={{ height:130, background:BG[Math.abs(l.ListingKey?.charCodeAt(0)||0)%BG.length], position:'relative' }}>
-                        <i className="ti ti-building-estate" style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, color:'rgba(255,255,255,.06)', margin:'auto', lineHeight:'130px', width:'100%', textAlign:'center' }}/>
-                      </div>
-                      <div style={{ padding:'10px 11px' }}>
-                        <div style={{ fontSize:15, fontWeight:600, marginBottom:3 }}>{fmt(l.ListPrice)}</div>
-                        <div style={{ fontSize:11, color:'rgba(255,255,255,.45)', marginBottom:6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{addr}, {l.City}</div>
-                        <div style={{ display:'flex', gap:10, fontSize:11, color:'rgba(255,255,255,.4)' }}>
-                          {l.BedroomsTotal!=null&&<span><i className="ti ti-bed" style={{ fontSize:10 }}/> {l.BedroomsTotal}</span>}
-                          {l.BathroomsTotalInteger!=null&&<span><i className="ti ti-bath" style={{ fontSize:10 }}/> {l.BathroomsTotalInteger}</span>}
-                          {l.DaysOnMarket!=null&&<span><i className="ti ti-clock" style={{ fontSize:10 }}/> {l.DaysOnMarket}d</span>}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {similar.map(l => (
+                <ListingCard key={l.ListingKey} listing={l} isSaved={isSaved(l.ListingKey)} onSave={()=>toggleSave(l)}/>
+              ))}
             </div>
           </div>
         )}

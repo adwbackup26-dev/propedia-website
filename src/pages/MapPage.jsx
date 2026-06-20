@@ -70,6 +70,7 @@ export default function MapPage() {
 
   // Stable ref so init useEffect never needs fetchAndPlot in its dep array
   const fetchAndPlotRef = useRef(null);
+  const initialFitDone  = useRef(false);
 
   // ── Plot markers — defined FIRST so fetchAndPlot can close over it ────────
   const plotMarkers = useCallback(listings => {
@@ -78,6 +79,15 @@ export default function MapPage() {
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
     if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
+
+    // On first load, fit map to show all markers (only once — fitBounds triggers moveend)
+    if (listings.length > 0 && map.current && !initialFitDone.current) {
+      initialFitDone.current = true;
+      const bounds = new mapboxgl.LngLatBounds();
+      listings.forEach(l => bounds.extend([l.Longitude, l.Latitude]));
+      map.current.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 600 });
+      console.log('[MapPage] fitBounds SW:', bounds.getSouthWest(), 'NE:', bounds.getNorthEast());
+    }
 
     listings.forEach(listing => {
       const marker = new mapboxgl.Marker({ color: '#00B4A8', scale: 0.7 })

@@ -47,43 +47,7 @@ export default function MapPage() {
 
   const setFilters = useCallback(patch => setFiltersState(p => ({ ...p, ...patch })), []);
 
-  // ── Fetch listings for current bbox + filters ────────────────────────────
-  const fetchAndPlot = useCallback(async (bounds, currentFilters) => {
-    if (!map.current) return;
-    setLoading(true);
-    try {
-      const tx = encodeURIComponent(currentFilters.transactionType || 'For Sale');
-      let qs = `limit=50&transactionType=${tx}`;
-      if (currentFilters.propertyType)    qs += `&propertyType=${encodeURIComponent(currentFilters.propertyType)}`;
-      if (currentFilters.minPrice)        qs += `&minPrice=${currentFilters.minPrice}`;
-      if (currentFilters.maxPrice)        qs += `&maxPrice=${currentFilters.maxPrice}`;
-      if (currentFilters.minBeds)         qs += `&minBeds=${currentFilters.minBeds}`;
-      if (currentFilters.minBaths)        qs += `&minBaths=${currentFilters.minBaths}`;
-      if (currentFilters.propertySubType) qs += `&propertySubType=${encodeURIComponent(currentFilters.propertySubType)}`;
-      if (currentFilters.city)            qs += `&city=${encodeURIComponent(currentFilters.city)}`;
-
-      const res = await fetch(`/api/listings?${qs}`);
-      if (!res.ok) return;
-      const data = await res.json();
-
-      // TRREB doesn't support Latitude/Longitude in $filter — filter client-side
-      const s = bounds.getSouth(), n = bounds.getNorth();
-      const w = bounds.getWest(),  e = bounds.getEast();
-      const listings = (data.listings || []).filter(l =>
-        l.Latitude && l.Longitude &&
-        l.Latitude >= s && l.Latitude <= n &&
-        l.Longitude >= w && l.Longitude <= e
-      );
-      setListingCount(listings.length);
-      plotMarkers(listings);
-    } catch (e) {
-      console.error('[MapPage] fetch error', e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // ── Plot markers ─────────────────────────────────────────────────────────
+  // ── Plot markers — defined FIRST so fetchAndPlot can close over it ────────
   const plotMarkers = useCallback(listings => {
     // Remove old markers
     markersRef.current.forEach(m => m.remove());
@@ -138,6 +102,37 @@ export default function MapPage() {
       markersRef.current.push(marker);
     });
   }, []);
+
+  // ── Fetch listings + plot ─────────────────────────────────────────────────
+  const fetchAndPlot = useCallback(async (bounds, currentFilters) => {
+    if (!map.current) return;
+    setLoading(true);
+    try {
+      const tx = encodeURIComponent(currentFilters.transactionType || 'For Sale');
+      let qs = `limit=50&transactionType=${tx}`;
+      if (currentFilters.propertyType)    qs += `&propertyType=${encodeURIComponent(currentFilters.propertyType)}`;
+      if (currentFilters.minPrice)        qs += `&minPrice=${currentFilters.minPrice}`;
+      if (currentFilters.maxPrice)        qs += `&maxPrice=${currentFilters.maxPrice}`;
+      if (currentFilters.minBeds)         qs += `&minBeds=${currentFilters.minBeds}`;
+      if (currentFilters.minBaths)        qs += `&minBaths=${currentFilters.minBaths}`;
+      if (currentFilters.propertySubType) qs += `&propertySubType=${encodeURIComponent(currentFilters.propertySubType)}`;
+      if (currentFilters.city)            qs += `&city=${encodeURIComponent(currentFilters.city)}`;
+
+      const res = await fetch(`/api/listings?${qs}`);
+      if (!res.ok) { console.error('[MapPage] fetch failed', res.status); return; }
+      const data = await res.json();
+
+      const all = data.listings || [];
+      const withCoords = all.filter(l => l.Latitude && l.Longitude);
+      console.log(`[MapPage] total=${all.length} withCoords=${withCoords.length}`, withCoords[0] ? `first=(${withCoords[0].Latitude},${withCoords[0].Longitude})` : 'none');
+      setListingCount(withCoords.length);
+      plotMarkers(withCoords);
+    } catch (err) {
+      console.error('[MapPage] fetch error', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [plotMarkers]);
 
   // ── Fetch token from server (avoids Vite build-time embedding issues) ────
   useEffect(() => {

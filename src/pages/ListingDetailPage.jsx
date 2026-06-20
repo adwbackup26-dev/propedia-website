@@ -143,6 +143,7 @@ function PriceIntelligence({ listing }) {
           ))}
         </svg>
       </div>
+      <p style={{ fontSize:10, color:'rgba(255,255,255,.2)', marginTop:10, lineHeight:1.6 }}>Fairly Priced verdict based on comparable sales within same postal code and property type, last 6 months, ±25% price band. Data from TRREB. Not financial advice.</p>
     </div>
   );
 }

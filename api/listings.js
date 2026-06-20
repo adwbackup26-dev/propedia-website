@@ -38,8 +38,10 @@ export default async function handler(req, res) {
       : "TransactionType eq 'For Sale'",
   ];
 
-  if (propertyType === 'Residential')    filters.push("PropertyType eq 'Residential'");
-  else if (propertyType === 'Commercial') filters.push("PropertyType ne 'Residential'");
+  // Commercial tabs: exclude residential. Residential tabs: no PropertyType filter —
+  // TRREB uses values like 'Residential Freehold'/'Residential Condo & Other' so
+  // eq 'Residential' would return 0 results.
+  if (propertyType === 'Commercial') filters.push("PropertyType ne 'Residential'");
 
   if (minPrice)        filters.push(`ListPrice ge ${parseInt(minPrice)}`);
   if (maxPrice)        filters.push(`ListPrice le ${parseInt(maxPrice)}`);
@@ -97,6 +99,9 @@ export default async function handler(req, res) {
     const listings = (data.value || []).filter(
       l => l.InternetEntireListingDisplayYN === true
     );
+    // Diagnostic: log unique PropertyType values to understand TRREB's actual data
+    const ptValues = [...new Set(listings.map(l => l.PropertyType).filter(Boolean))];
+    console.log('[listings] PropertyType values in response:', ptValues, '| propertyType param:', propertyType, '| tx:', transactionType);
 
     return res.status(200).json({
       listings,

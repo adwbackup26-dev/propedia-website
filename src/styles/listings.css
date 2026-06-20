@@ -1,4 +1,5 @@
 /* ── Propedia Listings — Dark Theme ──────────────────────────────────────── */
+@keyframes card-photo-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ── Page shell ─────────────────────────────────────────────────────── */
 .listings-page { min-height: 100vh; background: var(--bg-page); }

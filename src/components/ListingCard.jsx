@@ -1,6 +1,6 @@
 // src/components/ListingCard.jsx — dark photo-first card with carousel + mortgage estimate
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvailableButton from './AvailableButton.jsx';
 import { formatPrice, formatAddress, formatCityLine, formatDOM, domIsHigh,
@@ -67,6 +67,16 @@ export default function ListingCard({ listing, isSaved, onSave, userPrefs = null
   const handleCard = () => navigate(`/listing/${listing.ListingKey}`);
   const handleSave = e => { e.stopPropagation(); onSave?.(listing); };
 
+  // Touch / swipe support
+  const touchX = useRef(null);
+  const onTouchStart = e => { touchX.current = e.touches[0].clientX; };
+  const onTouchEnd   = e => {
+    if (touchX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (Math.abs(dx) > 40) dx < 0 ? nextPhoto(e) : prevPhoto(e);
+    touchX.current = null;
+  };
+
   return (
     <article
       className={`listing-card${listView ? ' listing-card--list' : ''}`}
@@ -76,14 +86,14 @@ export default function ListingCard({ listing, isSaved, onSave, userPrefs = null
       aria-label={`${address} — ${formatPrice(price)}`}
     >
       {/* ── Photo ─────────────────────────────────────────────────────── */}
-      <div className={`card-photo`} style={{
+      <div className={`card-photo`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{
         position: 'relative',
         ...(listView ? {} : { paddingTop: '58%' }),
         background: '#1e2028', overflow: 'hidden', flexShrink: 0,
       }}>
         {photo ? (
-          <img src={photo} alt={address}
-            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transition:'transform .4s' }}
+          <img key={photoIdx} src={photo} alt={address}
+            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', animation:'card-photo-fade .25s ease' }}
             loading="lazy" decoding="async" onError={e => e.target.style.display='none'}/>
         ) : (
           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>

@@ -47,7 +47,7 @@ function popupHTML(listing, photoUrl) {
         <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:2px;">${price}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.45);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${addr}${city ? ', ' + city : ''}</div>
         ${specs ? `<div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:10px;">${specs}</div>` : ''}
-        <a href="/listing/${listing.ListingKey}" style="display:block;text-align:center;background:#00B4A8;color:#fff;font-size:12px;font-weight:600;padding:7px 0;border-radius:6px;text-decoration:none;">View Details →</a>
+        <a data-key="${listing.ListingKey}" href="/listing/${listing.ListingKey}" style="display:block;text-align:center;background:#00B4A8;color:#fff;font-size:12px;font-weight:600;padding:7px 0;border-radius:6px;text-decoration:none;cursor:pointer;">View Details →</a>
       </div>
     </div>`;
 }
@@ -104,6 +104,17 @@ export default function MapPage() {
           .setLngLat([listing.Longitude, listing.Latitude])
           .setHTML(popupHTML(listing, photoUrl))
           .addTo(map.current);
+
+        // Delegate "View Details" click through React Router (avoids full reload)
+        const popupEl = popup.getElement();
+        if (popupEl) {
+          popupEl.addEventListener('click', e => {
+            const a = e.target.closest('a[data-key]');
+            if (!a) return;
+            e.preventDefault();
+            navigate(`/listing/${a.dataset.key}`);
+          });
+        }
 
         popupRef.current = popup;
       });

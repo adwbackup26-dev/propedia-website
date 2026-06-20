@@ -70,6 +70,7 @@ export default async function handler(req, res) {
     'InternetEntireListingDisplayYN',
     'ListAgentFullName', 'ListOfficeName',
     'ModificationTimestamp',
+    'Latitude', 'Longitude',
   ].join(',');
 
   const qs = [

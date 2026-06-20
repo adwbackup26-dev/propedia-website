@@ -98,21 +98,16 @@ export default function MapPage() {
           if (r.ok) { const d = await r.json(); photoUrl = d.photos?.[0]?.url || null; }
         } catch {}
 
-        const popup = new mapboxgl.Popup({ offset: 16, closeButton: true, maxWidth: 'none' })
+        const popup = new mapboxgl.Popup({
+          anchor:      'bottom',
+          offset:      [0, -18],
+          closeButton: true,
+          maxWidth:    'none',
+          className:   'propedia-popup',
+        })
           .setLngLat([listing.Longitude, listing.Latitude])
           .setHTML(popupHTML(listing, photoUrl))
           .addTo(map.current);
-
-        // Style the Mapbox popup wrapper to be dark/transparent
-        const wrapper = popup.getElement();
-        if (wrapper) {
-          wrapper.style.background = 'transparent';
-          wrapper.style.boxShadow  = 'none';
-          const tip = wrapper.querySelector('.mapboxgl-popup-tip');
-          if (tip) tip.style.display = 'none';
-          const content = wrapper.querySelector('.mapboxgl-popup-content');
-          if (content) { content.style.background = 'transparent'; content.style.padding = '0'; content.style.boxShadow = 'none'; }
-        }
 
         popupRef.current = popup;
       });
@@ -234,6 +229,17 @@ export default function MapPage() {
 
   return (
     <div style={{ position:'relative', width:'100%', height:'100vh', fontFamily:'DM Sans,system-ui,sans-serif' }}>
+      <style>{`
+        .propedia-popup .mapboxgl-popup-content {
+          background: transparent; padding: 0; box-shadow: none; border-radius: 0;
+        }
+        .propedia-popup .mapboxgl-popup-tip { display: none; }
+        .propedia-popup .mapboxgl-popup-close-button {
+          color: rgba(255,255,255,.6); font-size: 18px; top: 6px; right: 8px;
+          background: rgba(0,0,0,.4); border-radius: 50%; width: 22px; height: 22px;
+          display: flex; align-items: center; justify-content: center; line-height: 1;
+        }
+      `}</style>
 
       {/* ── Map container ── */}
       <div ref={mapContainer} style={{ width:'100%', height:'100%' }}/>

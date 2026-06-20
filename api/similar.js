@@ -30,21 +30,24 @@ export default async function handler(req, res) {
   // Exclude the current listing
   if (exclude) filters.push(`ListingKey ne '${exclude}'`);
 
-  const url = new URL(RESO_BASE);
-  url.searchParams.set('$filter', filters.join(' and '));
-  url.searchParams.set('$top', Math.min(parseInt(limit), 8).toString());
-  url.searchParams.set('$orderby', 'ModificationTimestamp desc');
-  url.searchParams.set('$select', [
+  const select = [
     'ListingKey','ListingId','ListPrice','TransactionType',
     'UnparsedAddress','StreetNumber','StreetName','City','PostalCode',
-    'BedroomsTotal','BathroomsTotalInteger','LivingArea',
+    'BedroomsTotal','BathroomsTotalInteger','LivingAreaRange',
     'PropertyType','PropertySubType','DaysOnMarket',
-    'InternetEntireListingDisplayYN','ListAgentFullName','ListOfficeName','Media',
-  ].join(','));
-  url.searchParams.set('$expand', 'Media');
+    'InternetEntireListingDisplayYN','ListAgentFullName','ListOfficeName',
+  ].join(',');
+
+  const qs = [
+    `$filter=${encodeURIComponent(filters.join(' and '))}`,
+    `$top=${Math.min(parseInt(limit), 8)}`,
+    `$orderby=${encodeURIComponent('ModificationTimestamp desc')}`,
+    `$select=${encodeURIComponent(select)}`,
+  ].join('&');
+  const apiUrl = `${RESO_BASE}?${qs}`;
 
   try {
-    const upstream = await fetch(url.toString(), {
+    const upstream = await fetch(apiUrl, {
       headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
     });
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'TRREB error' });

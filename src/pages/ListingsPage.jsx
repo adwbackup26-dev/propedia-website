@@ -1,7 +1,7 @@
 // src/pages/ListingsPage.jsx — Propedia marketplace homepage
 // Dark theme · slim nav · dropdown filters · 2-column grid · photo carousel cards
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Filters from '../components/Filters.jsx';
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
@@ -14,6 +14,34 @@ import '../styles/listings.css';
 const SearchIcon = () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>;
 const GridIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>;
 const ListIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2.5" rx="1.25"/><rect x="0" y="6.75" width="16" height="2.5" rx="1.25"/><rect x="0" y="12.5" width="16" height="2.5" rx="1.25"/></svg>;
+
+// ── Autocomplete data ─────────────────────────────────────────────────────────
+const AC_CITIES = [
+  'Toronto','Mississauga','Brampton','Oakville','Burlington','Vaughan','Markham',
+  'Richmond Hill','Ajax','Pickering','Milton','Whitby','Oshawa','Halton Hills',
+  'Caledon','Aurora','Newmarket','King','Georgina','Innisfil','Barrie',
+  'Collingwood','Guelph','Hamilton','Kitchener','Waterloo','Cambridge',
+];
+const AC_HOODS = [
+  // Toronto
+  'Etobicoke','Scarborough','North York','East York','York','Downtown Toronto',
+  'Midtown Toronto','The Beaches','Leslieville','Riverdale','Roncesvalles',
+  'Junction','Bloor West Village','Lawrence Park','Forest Hill','Rosedale',
+  'Moore Park','Leaside','Don Mills','Agincourt','Malvern','Rouge','Woburn',
+  // Mississauga
+  'Port Credit','Streetsville','Meadowvale','Erin Mills','Cooksville',
+  'Clarkson','Lakeview','Applewood','Malton',
+];
+const AC_ALL = [
+  ...AC_CITIES.map(v => ({ label: v, type: 'city' })),
+  ...AC_HOODS.map(v => ({ label: v, type: 'hood' })),
+];
+
+function getSuggestions(q) {
+  if (!q || q.length < 2) return [];
+  const lq = q.toLowerCase();
+  return AC_ALL.filter(s => s.label.toLowerCase().includes(lq)).slice(0, 6);
+}
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 function Pagination({ page, pages, onPageChange }) {
@@ -63,12 +91,43 @@ export default function ListingsPage() {
   const [userPrefs,   setUserPrefs]   = useState(() => getUserPrefs());
   const [search,      setSearch]      = useState('');
   const [activeTab,   setActiveTab]   = useState('res-sale');
+  const [acOpen,      setAcOpen]      = useState(false);
+  const [acIdx,       setAcIdx]       = useState(-1);
+  const searchWrapRef = useRef(null);
+
+  const suggestions = getSuggestions(search);
+
+  const commitSuggestion = useCallback(s => {
+    setSearch(s.label);
+    setAcOpen(false);
+    setAcIdx(-1);
+    if (s.type === 'city') {
+      applyWith({ city: s.label, search: '' });
+    } else {
+      applyWith({ search: s.label, city: '' });
+    }
+  }, [applyWith]);
 
   const handleSearch = e => {
     e.preventDefault();
-    setFilters({ search });
-    applyFilters();
+    setAcOpen(false);
+    applyWith({ search, city: '' });
   };
+
+  const handleSearchKey = e => {
+    if (!acOpen || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAcIdx(i => Math.min(i + 1, suggestions.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setAcIdx(i => Math.max(i - 1, -1)); }
+    else if (e.key === 'Enter' && acIdx >= 0) { e.preventDefault(); commitSuggestion(suggestions[acIdx]); }
+    else if (e.key === 'Escape') { setAcOpen(false); setAcIdx(-1); }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = e => { if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setAcOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   const handleVOWSuccess = () => {
     setHasVOW(true); setUserPrefs(getUserPrefs()); setVowOpen(false);
   };
@@ -93,12 +152,57 @@ export default function ListingsPage() {
       <header className="mp-nav" role="banner">
         <Link to="/" className="mp-nav__logo">Propedia</Link>
 
-        <form className="mp-nav__search" onSubmit={handleSearch} role="search">
-          <span className="mp-nav__search-icon" aria-hidden="true"><SearchIcon /></span>
-          <input type="search" placeholder="City, address, or postal code…" value={search}
-            onChange={e => setSearch(e.target.value)} aria-label="Search listings"/>
-          <button type="submit" className="mp-nav__search-btn">Search</button>
-        </form>
+        <div ref={searchWrapRef} style={{ position:'relative', flex:1, minWidth:0 }}>
+          <form className="mp-nav__search" onSubmit={handleSearch} role="search">
+            <span className="mp-nav__search-icon" aria-hidden="true"><SearchIcon /></span>
+            <input
+              type="search"
+              placeholder="City, address, or postal code…"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setAcOpen(true); setAcIdx(-1); }}
+              onKeyDown={handleSearchKey}
+              onFocus={() => search.length >= 2 && setAcOpen(true)}
+              aria-label="Search listings"
+              aria-autocomplete="list"
+              aria-expanded={acOpen && suggestions.length > 0}
+              autoComplete="off"
+            />
+            <button type="submit" className="mp-nav__search-btn">Search</button>
+          </form>
+
+          {/* Autocomplete dropdown */}
+          {acOpen && search.length >= 2 && (
+            <div style={{
+              position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:500,
+              background:'#161719', border:'1px solid rgba(255,255,255,.12)', borderRadius:8,
+              boxShadow:'0 8px 24px rgba(0,0,0,.5)', overflow:'hidden',
+            }}>
+              {suggestions.length === 0 ? (
+                <div style={{ padding:'10px 14px', fontSize:12, color:'rgba(255,255,255,.3)' }}>No suggestions</div>
+              ) : suggestions.map((s, i) => (
+                <div
+                  key={s.label}
+                  onMouseDown={e => { e.preventDefault(); commitSuggestion(s); }}
+                  onMouseEnter={() => setAcIdx(i)}
+                  style={{
+                    padding:'9px 14px', fontSize:12, cursor:'pointer', display:'flex',
+                    alignItems:'center', gap:8,
+                    background: i === acIdx ? 'rgba(0,180,168,.12)' : 'transparent',
+                    color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.75)',
+                    borderBottom: i < suggestions.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none',
+                  }}
+                >
+                  <i className={`ti ${s.type === 'city' ? 'ti-building-community' : 'ti-map-pin'}`}
+                     style={{ fontSize:11, color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.3)', flexShrink:0 }}/>
+                  <span>{s.label}</span>
+                  <span style={{ marginLeft:'auto', fontSize:10, color:'rgba(255,255,255,.25)' }}>
+                    {s.type === 'city' ? 'City' : 'Neighbourhood'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
           className={`mp-nav__filters${filtersOpen ? ' active' : ''}`}

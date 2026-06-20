@@ -477,6 +477,7 @@ export default function ListingDetailPage() {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [photoIdx,     setPhotoIdx]     = useState(0);
+  const [lightbox,     setLightbox]     = useState(false);
   const [monthlyTotal, setMonthlyTotal] = useState(null);
 
   useEffect(() => {
@@ -574,7 +575,7 @@ export default function ListingDetailPage() {
               <span style={{ fontSize:10, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'4px 11px', borderRadius:5, background:isLease?'rgba(59,130,246,.85)':'rgba(16,185,129,.85)', color:'#fff' }}>{listing.TransactionType}</span>
               {listing.OriginalListPrice&&listing.OriginalListPrice>listing.ListPrice&&<span style={{ fontSize:10, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'rgba(239,68,68,.8)', color:'#fff' }}>Price Reduced {fmt(listing.OriginalListPrice-listing.ListPrice)}</span>}
             </div>
-            <button style={{ position:'absolute', bottom:72, right:14, height:30, padding:'0 12px', background:'rgba(0,0,0,.6)', border:'1px solid rgba(255,255,255,.18)', borderRadius:7, color:'rgba(255,255,255,.8)', fontSize:11, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
+            <button onClick={()=>setLightbox(true)} style={{ position:'absolute', bottom:72, right:14, height:30, padding:'0 12px', background:'rgba(0,0,0,.6)', border:'1px solid rgba(255,255,255,.18)', borderRadius:7, color:'rgba(255,255,255,.8)', fontSize:11, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
               <i className="ti ti-camera" style={{ fontSize:11 }}/>View all {photoCount} photos
             </button>
             <div style={{ position:'absolute', bottom:10, left:'50%', transform:'translateX(-50%)', display:'flex', gap:6 }}>
@@ -675,6 +676,72 @@ export default function ListingDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightbox && <Lightbox photos={photos} startIdx={photoIdx} onClose={()=>setLightbox(false)}/>}
+    </div>
+  );
+}
+
+function Lightbox({ photos, startIdx, onClose }) {
+  const [idx, setIdx] = useState(startIdx);
+  const total = photos.length;
+  const prev = () => setIdx(i => (i - 1 + total) % total);
+  const next = () => setIdx(i => (i + 1) % total);
+
+  useEffect(() => {
+    const onKey = e => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, []);
+
+  const touchStart = React.useRef(null);
+  const onTouchStart = e => { touchStart.current = e.touches[0].clientX; };
+  const onTouchEnd   = e => {
+    if (touchStart.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current;
+    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
+    touchStart.current = null;
+  };
+
+  const url = photos[idx]?.url;
+
+  return (
+    <div
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      style={{ position:'fixed', inset:0, zIndex:1000, background:'#0C0D10', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}
+    >
+      {/* Close */}
+      <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:40, height:40, borderRadius:'50%', border:'1px solid rgba(255,255,255,.18)', background:'rgba(255,255,255,.08)', color:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>
+        <i className="ti ti-x"/>
+      </button>
+
+      {/* Photo */}
+      <div style={{ flex:1, width:'100%', display:'flex', alignItems:'center', justifyContent:'center', padding:'60px 70px' }}>
+        {url
+          ? <img key={idx} src={url} alt={`Photo ${idx+1}`} style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain', borderRadius:6, animation:'lb-fade .18s ease' }}/>
+          : <i className="ti ti-photo-off" style={{ fontSize:64, color:'rgba(255,255,255,.15)' }}/>
+        }
+      </div>
+
+      {/* Prev / Next */}
+      {total > 1 && <>
+        <button onClick={prev} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:44, height:44, borderRadius:'50%', border:'1px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.08)', color:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+        <button onClick={next} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', width:44, height:44, borderRadius:'50%', border:'1px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.08)', color:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
+      </>}
+
+      {/* Counter */}
+      <div style={{ position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)', fontSize:13, color:'rgba(255,255,255,.45)', background:'rgba(0,0,0,.5)', padding:'5px 14px', borderRadius:20 }}>
+        {idx + 1} / {total}
+      </div>
+
+      <style>{`@keyframes lb-fade { from { opacity:0; } to { opacity:1; } }`}</style>
     </div>
   );
 }

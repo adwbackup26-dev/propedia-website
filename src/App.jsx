@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ListingsPage from './pages/ListingsPage.jsx';
 import ListingDetailPage from './pages/ListingDetailPage.jsx';
+import MapPage from './pages/MapPage.jsx';
 
 // Phase 3 stub — DeepCompare activates here
 const DeepComparePage = () => (
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/" element={<ListingsPage />} />
       <Route path="/listings" element={<Navigate to="/" replace />} />
       <Route path="/listing/:listingKey" element={<ListingDetailPage />} />
+      <Route path="/map" element={<MapPage />} />
       <Route path="/compare" element={<DeepComparePage />} />
       <Route path="/chat" element={<ChatPage />} />
       {/* Catch-all: redirect to home */}

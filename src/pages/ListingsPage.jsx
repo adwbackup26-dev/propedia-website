@@ -2,7 +2,7 @@
 // Dark theme · slim nav · dropdown filters · 2-column grid · photo carousel cards
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Filters from '../components/Filters.jsx';
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
 import CompareBar from '../components/CompareBar.jsx';
@@ -83,6 +83,7 @@ export default function ListingsPage() {
   const { listings, total, pages, page, filters, loading, error,
           setFilters, applyFilters, applyWith, resetFilters, goToPage } = useListings();
   const { saved, toggleSave, isSaved, clearAll } = useCompare();
+  const navigate = useNavigate();
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode,    setViewMode]    = useState('grid');
@@ -263,6 +264,9 @@ export default function ListingsPage() {
             <div className="view-toggle" role="group" aria-label="View mode">
               <button className={`view-btn${viewMode==='grid'?' active':''}`} onClick={() => setViewMode('grid')} aria-label="Grid view" aria-pressed={viewMode==='grid'} title="Grid"><GridIcon /></button>
               <button className={`view-btn${viewMode==='list'?' active':''}`} onClick={() => setViewMode('list')} aria-label="List view" aria-pressed={viewMode==='list'} title="List"><ListIcon /></button>
+              <button className="view-btn" onClick={() => navigate('/map')} aria-label="Map view" title="Map" style={{ display:'flex', alignItems:'center', gap:4, padding:'0 8px', fontSize:11 }}>
+                <i className="ti ti-map-2" style={{ fontSize:13 }}/>Map
+              </button>
             </div>
           </div>
 

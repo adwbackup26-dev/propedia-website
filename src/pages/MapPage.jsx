@@ -8,8 +8,6 @@ import Filters from '../components/Filters.jsx';
 import { formatPrice } from '../utils/format.js';
 import { DEFAULT_FILTERS } from '../hooks/useListings.js';
 
-const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-
 // ── Popup card component rendered into a DOM node via innerHTML ───────────────
 function popupHTML(listing, photoUrl) {
   const price   = listing.ListPrice ? formatPrice(listing.ListPrice) : '—';
@@ -40,6 +38,8 @@ export default function MapPage() {
   const markersRef   = useRef([]);
   const popupRef     = useRef(null);
 
+  const [token, setToken]             = useState('');
+  const [tokenError, setTokenError]   = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFiltersState]    = useState(DEFAULT_FILTERS);
   const [listingCount, setListingCount] = useState(0);
@@ -137,10 +137,18 @@ export default function MapPage() {
     });
   }, []);
 
+  // ── Fetch token from server (avoids Vite build-time embedding issues) ────
+  useEffect(() => {
+    fetch('/api/maptoken')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => setToken(d.token || ''))
+      .catch(() => setTokenError(true));
+  }, []);
+
   // ── Init map ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!TOKEN || map.current) return;
-    mapboxgl.accessToken = TOKEN;
+    if (!token || map.current) return;
+    mapboxgl.accessToken = token;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -160,7 +168,7 @@ export default function MapPage() {
     map.current.on('moveend', onMoveEnd);
 
     return () => { map.current?.remove(); map.current = null; };
-  }, [fetchAndPlot]);
+  }, [token, fetchAndPlot]);
 
   // ── Re-fetch when filters applied ────────────────────────────────────────
   const applyFilters = useCallback(() => {
@@ -174,10 +182,17 @@ export default function MapPage() {
     if (map.current) fetchAndPlot(map.current.getBounds(), DEFAULT_FILTERS);
   }, [fetchAndPlot]);
 
-  if (!TOKEN) return (
+  if (tokenError) return (
     <div style={{ background:'#0C0D10', color:'#fff', height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'DM Sans,sans-serif', flexDirection:'column', gap:12 }}>
-      <p style={{ color:'rgba(255,255,255,.5)', fontSize:14 }}>VITE_MAPBOX_TOKEN not configured.</p>
+      <p style={{ color:'rgba(255,255,255,.5)', fontSize:14 }}>Map unavailable — VITE_MAPBOX_TOKEN not configured in Vercel.</p>
       <button onClick={() => navigate('/')} style={{ background:'#00B4A8', color:'#fff', border:'none', padding:'10px 22px', borderRadius:7, cursor:'pointer', fontFamily:'inherit' }}>← Back to listings</button>
+    </div>
+  );
+
+  if (!token) return (
+    <div style={{ background:'#0C0D10', height:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ width:32, height:32, border:'2px solid rgba(0,180,168,.3)', borderTopColor:'#00B4A8', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 

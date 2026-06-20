@@ -8,7 +8,12 @@ import { useCompare } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
 import '../styles/listings.css';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || null;
+let _mapboxToken = null;
+async function getMapboxToken() {
+  if (_mapboxToken) return _mapboxToken;
+  try { const r = await fetch('/api/maptoken'); if (r.ok) { const d = await r.json(); _mapboxToken = d.token || null; } } catch {}
+  return _mapboxToken;
+}
 
 const card = { background:'#161719', borderRadius:10, border:'1px solid rgba(255,255,255,.06)', padding:'15px 17px', marginBottom:11 };
 const sh   = { fontSize:9, fontWeight:600, letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.28)', marginBottom:13, paddingBottom:9, borderBottom:'1px solid rgba(255,255,255,.05)', display:'flex', alignItems:'center', gap:7 };
@@ -326,9 +331,13 @@ function NegotiateSignal({ listing }) {
 
 function PropertyMap({ listing }) {
   const lat=listing.Latitude, lng=listing.Longitude;
-  const mapUrl = MAPBOX_TOKEN && lat && lng
-    ? `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+00B4A8(${lng},${lat})/${lng},${lat},14,0/800x280?access_token=${MAPBOX_TOKEN}`
-    : null;
+  const [mapUrl, setMapUrl] = React.useState(null);
+  React.useEffect(() => {
+    if (!lat || !lng) return;
+    getMapboxToken().then(tok => {
+      if (tok) setMapUrl(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+00B4A8(${lng},${lat})/${lng},${lat},14,0/800x280?access_token=${tok}`);
+    });
+  }, [lat, lng]);
   return (
     <div style={card}>
       <div style={sh}><i className="ti ti-map-2" style={shI}/>Property location</div>

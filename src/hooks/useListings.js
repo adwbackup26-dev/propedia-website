@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const DEFAULT_FILTERS = {
   transactionType: 'For Sale',
+  propertyType:    'Residential',
   minPrice:        '',
   maxPrice:        '',
   minBeds:         '',
@@ -53,10 +54,14 @@ export function useListings() {
 
   const setFilters = useCallback(patch => setFiltersState(p => ({ ...p, ...patch })), []);
   const applyFilters = useCallback(() => { setApplied(filters); setPage(1); }, [filters]);
+  const applyWith = useCallback(patch => {
+    setFiltersState(p => { const next = { ...p, ...patch }; setApplied(next); return next; });
+    setPage(1);
+  }, []);
   const resetFilters = useCallback(() => { setFiltersState(DEFAULT_FILTERS); setApplied(DEFAULT_FILTERS); setPage(1); }, []);
   const goToPage = useCallback(p => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
-  return { listings, total, pages, page, filters, loading, error, setFilters, applyFilters, resetFilters, goToPage };
+  return { listings, total, pages, page, filters, loading, error, setFilters, applyFilters, applyWith, resetFilters, goToPage };
 }
 
 export function getVOWSession() {

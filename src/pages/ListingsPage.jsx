@@ -53,7 +53,7 @@ function filterSummary(filters) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ListingsPage() {
   const { listings, total, pages, page, filters, loading, error,
-          setFilters, applyFilters, resetFilters, goToPage } = useListings();
+          setFilters, applyFilters, applyWith, resetFilters, goToPage } = useListings();
   const { saved, toggleSave, isSaved, clearAll } = useCompare();
 
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -62,6 +62,7 @@ export default function ListingsPage() {
   const [hasVOW,      setHasVOW]      = useState(() => getVOWSession());
   const [userPrefs,   setUserPrefs]   = useState(() => getUserPrefs());
   const [search,      setSearch]      = useState('');
+  const [activeTab,   setActiveTab]   = useState('res-sale');
 
   const handleSearch = e => {
     e.preventDefault();
@@ -72,6 +73,19 @@ export default function ListingsPage() {
     setHasVOW(true); setUserPrefs(getUserPrefs()); setVowOpen(false);
   };
   const isLease = filters.transactionType === 'For Lease';
+  const isCommercial = activeTab === 'com-sale' || activeTab === 'com-rent';
+
+  const TABS = [
+    { id:'res-sale',  label:'Residential Sale',   tx:'For Sale',  pt:'Residential' },
+    { id:'res-rent',  label:'Residential Rental', tx:'For Lease', pt:'Residential' },
+    { id:'com-sale',  label:'Commercial Sale',    tx:'For Sale',  pt:'Commercial'  },
+    { id:'com-rent',  label:'Commercial Rental',  tx:'For Lease', pt:'Commercial'  },
+  ];
+
+  const handleTab = tab => {
+    setActiveTab(tab.id);
+    applyWith({ transactionType: tab.tx, propertyType: tab.pt, minBeds: '', minBaths: '', propertySubType: '' });
+  };
 
   return (
     <>
@@ -106,9 +120,29 @@ export default function ListingsPage() {
       {/* ── Filter panel ─────────────────────────────────────────────── */}
       {filtersOpen && (
         <div id="filter-panel">
-          <Filters filters={filters} setFilters={setFilters} applyFilters={() => { applyFilters(); setFiltersOpen(false); }} resetFilters={() => { resetFilters(); setFiltersOpen(false); }}/>
+          <Filters filters={filters} setFilters={setFilters} isCommercial={isCommercial} applyFilters={() => { applyFilters(); setFiltersOpen(false); }} resetFilters={() => { resetFilters(); setFiltersOpen(false); }}/>
         </div>
       )}
+
+      {/* ── Property type tabs ───────────────────────────────────────── */}
+      <div style={{ background:'#0C0D10', borderBottom:'1px solid rgba(255,255,255,.06)', padding:'0 16px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', gap:6, padding:'10px 0', overflowX:'auto' }}>
+          {TABS.map(tab => {
+            const active = activeTab === tab.id;
+            return (
+              <button key={tab.id} onClick={() => handleTab(tab)} style={{
+                height:34, padding:'0 16px', borderRadius:20, border:`1.5px solid ${active ? '#00B4A8' : 'rgba(255,255,255,.12)'}`,
+                background: active ? 'rgba(0,180,168,.12)' : '#161719',
+                color: active ? '#00B4A8' : 'rgba(255,255,255,.5)',
+                fontSize:12, fontWeight: active ? 600 : 400, cursor:'pointer',
+                fontFamily:'inherit', whiteSpace:'nowrap', transition:'all .15s',
+              }}>
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ── Main ─────────────────────────────────────────────────────── */}
       <div className="listings-page">

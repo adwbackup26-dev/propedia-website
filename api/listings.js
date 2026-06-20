@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     page            = '1',
     limit           = '20',
     transactionType = 'For Sale',
+    propertyType    = '',
     minPrice        = '',
     maxPrice        = '',
     minBeds         = '',
@@ -36,6 +37,9 @@ export default async function handler(req, res) {
       ? "TransactionType eq 'For Lease'"
       : "TransactionType eq 'For Sale'",
   ];
+
+  if (propertyType === 'Residential')    filters.push("PropertyType eq 'Residential'");
+  else if (propertyType === 'Commercial') filters.push("PropertyType ne 'Residential'");
 
   if (minPrice)        filters.push(`ListPrice ge ${parseInt(minPrice)}`);
   if (maxPrice)        filters.push(`ListPrice le ${parseInt(maxPrice)}`);

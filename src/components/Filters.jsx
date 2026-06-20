@@ -22,7 +22,7 @@ const SORTS = [
   { value:'DaysOnMarket_desc',         label:'Longest on market' },
 ];
 
-export default function Filters({ filters, setFilters, applyFilters, resetFilters }) {
+export default function Filters({ filters, setFilters, applyFilters, resetFilters, isCommercial = false }) {
   const isLease = filters.transactionType === 'For Lease';
   const currentSort = `${filters.sortBy}_${filters.sortDir}`;
   const setBeds  = v => setFilters({ minBeds: v });
@@ -58,21 +58,19 @@ export default function Filters({ filters, setFilters, applyFilters, resetFilter
 
       <div className="fp-sep"/>
 
-      {/* Beds */}
-      <span className="fp-label">Beds</span>
-      {BEDS.map(b => { const v = b==='Any'?'':b.replace('+',''); return (
-        <button key={b} className={`fp-pill${filters.minBeds===v?' active':''}`} onClick={() => setBeds(v)}>{b}</button>
-      );})}
-
-      <div className="fp-sep"/>
-
-      {/* Baths */}
-      <span className="fp-label">Baths</span>
-      {BATHS.map(b => { const v = b==='Any'?'':b.replace('+',''); return (
-        <button key={b} className={`fp-pill${filters.minBaths===v?' active':''}`} onClick={() => setBaths(v)}>{b}</button>
-      );})}
-
-      <div className="fp-sep"/>
+      {/* Beds — hidden for commercial */}
+      {!isCommercial && <>
+        <span className="fp-label">Beds</span>
+        {BEDS.map(b => { const v = b==='Any'?'':b.replace('+',''); return (
+          <button key={b} className={`fp-pill${filters.minBeds===v?' active':''}`} onClick={() => setBeds(v)}>{b}</button>
+        );})}
+        <div className="fp-sep"/>
+        <span className="fp-label">Baths</span>
+        {BATHS.map(b => { const v = b==='Any'?'':b.replace('+',''); return (
+          <button key={b} className={`fp-pill${filters.minBaths===v?' active':''}`} onClick={() => setBaths(v)}>{b}</button>
+        );})}
+        <div className="fp-sep"/>
+      </>}
 
       {/* Type */}
       <select className="fp-select" value={filters.propertySubType||''}

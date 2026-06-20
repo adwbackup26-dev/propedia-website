@@ -8,6 +8,27 @@ import Filters from '../components/Filters.jsx';
 import { formatPrice } from '../utils/format.js';
 import { DEFAULT_FILTERS } from '../hooks/useListings.js';
 
+// Module-level geocode cache — survives re-renders and filter changes
+const geocodeCache = {};
+
+async function geocodeAddress(address, token) {
+  if (geocodeCache[address] !== undefined) return geocodeCache[address];
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&country=ca&types=address,postcode&limit=1`;
+    const r = await fetch(url);
+    if (!r.ok) { geocodeCache[address] = null; return null; }
+    const d = await r.json();
+    const feat = d.features?.[0];
+    if (!feat) { geocodeCache[address] = null; return null; }
+    const [lng, lat] = feat.center;
+    geocodeCache[address] = { lat, lng };
+    return { lat, lng };
+  } catch {
+    geocodeCache[address] = null;
+    return null;
+  }
+}
+
 // ── Popup card component rendered into a DOM node via innerHTML ───────────────
 function popupHTML(listing, photoUrl) {
   const price   = listing.ListPrice ? formatPrice(listing.ListPrice) : '—';
@@ -103,9 +124,9 @@ export default function MapPage() {
     });
   }, []);
 
-  // ── Fetch listings + plot ─────────────────────────────────────────────────
+  // ── Fetch listings + geocode missing coords + plot ───────────────────────
   const fetchAndPlot = useCallback(async (bounds, currentFilters) => {
-    if (!map.current) return;
+    if (!map.current || !token) return;
     setLoading(true);
     try {
       const tx = encodeURIComponent(currentFilters.transactionType || 'For Sale');
@@ -121,10 +142,28 @@ export default function MapPage() {
       const res = await fetch(`/api/listings?${qs}`);
       if (!res.ok) { console.error('[MapPage] fetch failed', res.status); return; }
       const data = await res.json();
-
       const all = data.listings || [];
-      const withCoords = all.filter(l => l.Latitude && l.Longitude);
-      console.log(`[MapPage] total=${all.length} withCoords=${withCoords.length}`, withCoords[0] ? `first=(${withCoords[0].Latitude},${withCoords[0].Longitude})` : 'none');
+
+      // Enrich listings that lack TRREB coordinates via Mapbox Geocoding
+      const enriched = await Promise.allSettled(
+        all.map(async l => {
+          if (l.Latitude && l.Longitude) return l;
+          const addr = [
+            l.StreetNumber, l.StreetName, l.City, l.PostalCode,
+          ].filter(Boolean).join(' ') || l.UnparsedAddress;
+          if (!addr) return null;
+          const coords = await geocodeAddress(addr, token);
+          if (!coords) return null;
+          return { ...l, Latitude: coords.lat, Longitude: coords.lng };
+        })
+      );
+
+      const withCoords = enriched
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => r.value)
+        .filter(l => l.Latitude && l.Longitude);
+
+      console.log(`[MapPage] total=${all.length} withCoords=${withCoords.length}`);
       setListingCount(withCoords.length);
       plotMarkers(withCoords);
     } catch (err) {
@@ -132,7 +171,7 @@ export default function MapPage() {
     } finally {
       setLoading(false);
     }
-  }, [plotMarkers]);
+  }, [token, plotMarkers]);
 
   // ── Fetch token from server (avoids Vite build-time embedding issues) ────
   useEffect(() => {

@@ -76,22 +76,18 @@ export default function MapPage() {
     if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
 
     listings.forEach(listing => {
-      // Teal circle marker element
-      const el = document.createElement('div');
-      el.style.cssText = `
-        width:14px;height:14px;border-radius:50%;
-        background:#00B4A8;border:2px solid #fff;
-        cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.5);
-        transition:transform .15s;
-      `;
-      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.4)'; });
-      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+      const marker = new mapboxgl.Marker({ color: '#00B4A8', scale: 0.7 })
+        .setLngLat([listing.Longitude, listing.Latitude])
+        .addTo(map.current);
+
+      const el = marker.getElement();
+      el.style.cursor = 'pointer';
 
       el.addEventListener('click', async e => {
         e.stopPropagation();
+        console.log('[MapPage] pin clicked:', listing.UnparsedAddress);
         if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
 
-        // Fetch first photo
         let photoUrl = null;
         try {
           const r = await fetch(`/api/photos?listingKey=${listing.ListingKey}&limit=1`);
@@ -100,7 +96,7 @@ export default function MapPage() {
 
         const popup = new mapboxgl.Popup({
           anchor:      'bottom',
-          offset:      [0, -18],
+          offset:      [0, -32],
           closeButton: true,
           maxWidth:    'none',
           className:   'propedia-popup',
@@ -112,9 +108,6 @@ export default function MapPage() {
         popupRef.current = popup;
       });
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([listing.Longitude, listing.Latitude])
-        .addTo(map.current);
       markersRef.current.push(marker);
     });
   }, []);

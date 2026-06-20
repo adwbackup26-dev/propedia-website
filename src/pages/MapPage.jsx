@@ -52,13 +52,8 @@ export default function MapPage() {
     if (!map.current) return;
     setLoading(true);
     try {
-      const tx  = encodeURIComponent(currentFilters.transactionType || 'For Sale');
-      const s   = bounds.getSouth().toFixed(6);
-      const n   = bounds.getNorth().toFixed(6);
-      const w   = bounds.getWest().toFixed(6);
-      const e   = bounds.getEast().toFixed(6);
-
-      let qs = `limit=50&transactionType=${tx}&latMin=${s}&latMax=${n}&lngMin=${w}&lngMax=${e}`;
+      const tx = encodeURIComponent(currentFilters.transactionType || 'For Sale');
+      let qs = `limit=50&transactionType=${tx}`;
       if (currentFilters.propertyType)    qs += `&propertyType=${encodeURIComponent(currentFilters.propertyType)}`;
       if (currentFilters.minPrice)        qs += `&minPrice=${currentFilters.minPrice}`;
       if (currentFilters.maxPrice)        qs += `&maxPrice=${currentFilters.maxPrice}`;
@@ -67,11 +62,18 @@ export default function MapPage() {
       if (currentFilters.propertySubType) qs += `&propertySubType=${encodeURIComponent(currentFilters.propertySubType)}`;
       if (currentFilters.city)            qs += `&city=${encodeURIComponent(currentFilters.city)}`;
 
-      console.log('[MapPage] /api/listings?' + qs);
-      const res  = await fetch(`/api/listings?${qs}`);
+      const res = await fetch(`/api/listings?${qs}`);
       if (!res.ok) return;
       const data = await res.json();
-      const listings = (data.listings || []).filter(l => l.Latitude && l.Longitude);
+
+      // TRREB doesn't support Latitude/Longitude in $filter — filter client-side
+      const s = bounds.getSouth(), n = bounds.getNorth();
+      const w = bounds.getWest(),  e = bounds.getEast();
+      const listings = (data.listings || []).filter(l =>
+        l.Latitude && l.Longitude &&
+        l.Latitude >= s && l.Latitude <= n &&
+        l.Longitude >= w && l.Longitude <= e
+      );
       setListingCount(listings.length);
       plotMarkers(listings);
     } catch (e) {

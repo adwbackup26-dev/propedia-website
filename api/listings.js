@@ -25,10 +25,6 @@ export default async function handler(req, res) {
     search          = '',
     sortBy          = 'ModificationTimestamp',
     sortDir         = 'desc',
-    latMin          = '',
-    latMax          = '',
-    lngMin          = '',
-    lngMax          = '',
   } = req.query;
 
   const top  = Math.min(parseInt(limit) || 20, 50);
@@ -56,9 +52,6 @@ export default async function handler(req, res) {
   if (propertySubType) filters.push(`PropertySubType eq '${propertySubType}'`);
   if (city)            filters.push(`City eq '${city}'`);
   if (search)          filters.push(`contains(StreetName,'${search.replace(/'/g, "''")}')`);
-  if (latMin && latMax) { filters.push(`Latitude ge ${parseFloat(latMin)}`); filters.push(`Latitude le ${parseFloat(latMax)}`); }
-  if (lngMin && lngMax) { filters.push(`Longitude ge ${parseFloat(lngMin)}`); filters.push(`Longitude le ${parseFloat(lngMax)}`); }
-
   const select = [
     'ListingKey', 'ListingId', 'StandardStatus', 'TransactionType',
     'ListPrice', 'OriginalListPrice',
@@ -82,7 +75,6 @@ export default async function handler(req, res) {
     `$count=true`,
   ].join('&');
 
-  console.log('[listings] bbox:', { latMin, latMax, lngMin, lngMax });
   console.log('[listings] URL:', `${RESO_BASE}?${qs}`);
 
   try {

@@ -69,11 +69,7 @@ export default async function handler(req, res) {
     filters.push(`PropertySubType eq '${propertySubType}'`);
   }
 
-  const url = new URL(RESO_BASE);
-  url.searchParams.set('$filter',  filters.join(' and '));
-  url.searchParams.set('$top',     '12');
-  url.searchParams.set('$orderby', 'CloseDate desc');
-  url.searchParams.set('$select',  [
+  const select = [
     'ListingKey',
     'ClosePrice',
     'CloseDate',
@@ -82,11 +78,19 @@ export default async function handler(req, res) {
     'City',
     'PropertySubType',
     'BedroomsTotal',
-    'LivingArea',
-  ].join(','));
+    'LivingAreaRange',
+  ].join(',');
+
+  const qs = [
+    `$filter=${encodeURIComponent(filters.join(' and '))}`,
+    `$top=12`,
+    `$orderby=${encodeURIComponent('CloseDate desc')}`,
+    `$select=${encodeURIComponent(select)}`,
+  ].join('&');
+  const apiUrl = `${RESO_BASE}?${qs}`;
 
   try {
-    const upstream = await fetch(url.toString(), {
+    const upstream = await fetch(apiUrl, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',

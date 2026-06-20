@@ -52,23 +52,23 @@ export default function MapPage() {
     if (!map.current) return;
     setLoading(true);
     try {
-      const parts = [
-        `limit=50`,
-        `transactionType=${encodeURIComponent(currentFilters.transactionType || 'For Sale')}`,
-        `latMin=${bounds.getSouth().toFixed(6)}`,
-        `latMax=${bounds.getNorth().toFixed(6)}`,
-        `lngMin=${bounds.getWest().toFixed(6)}`,
-        `lngMax=${bounds.getEast().toFixed(6)}`,
-      ];
-      if (currentFilters.propertyType)   parts.push(`propertyType=${encodeURIComponent(currentFilters.propertyType)}`);
-      if (currentFilters.minPrice)       parts.push(`minPrice=${currentFilters.minPrice}`);
-      if (currentFilters.maxPrice)       parts.push(`maxPrice=${currentFilters.maxPrice}`);
-      if (currentFilters.minBeds)        parts.push(`minBeds=${currentFilters.minBeds}`);
-      if (currentFilters.minBaths)       parts.push(`minBaths=${currentFilters.minBaths}`);
-      if (currentFilters.propertySubType) parts.push(`propertySubType=${encodeURIComponent(currentFilters.propertySubType)}`);
-      if (currentFilters.city)           parts.push(`city=${encodeURIComponent(currentFilters.city)}`);
+      const tx  = encodeURIComponent(currentFilters.transactionType || 'For Sale');
+      const s   = bounds.getSouth().toFixed(6);
+      const n   = bounds.getNorth().toFixed(6);
+      const w   = bounds.getWest().toFixed(6);
+      const e   = bounds.getEast().toFixed(6);
 
-      const res  = await fetch(`/api/listings?${parts.join('&')}`);
+      let qs = `limit=50&transactionType=${tx}&latMin=${s}&latMax=${n}&lngMin=${w}&lngMax=${e}`;
+      if (currentFilters.propertyType)    qs += `&propertyType=${encodeURIComponent(currentFilters.propertyType)}`;
+      if (currentFilters.minPrice)        qs += `&minPrice=${currentFilters.minPrice}`;
+      if (currentFilters.maxPrice)        qs += `&maxPrice=${currentFilters.maxPrice}`;
+      if (currentFilters.minBeds)         qs += `&minBeds=${currentFilters.minBeds}`;
+      if (currentFilters.minBaths)        qs += `&minBaths=${currentFilters.minBaths}`;
+      if (currentFilters.propertySubType) qs += `&propertySubType=${encodeURIComponent(currentFilters.propertySubType)}`;
+      if (currentFilters.city)            qs += `&city=${encodeURIComponent(currentFilters.city)}`;
+
+      console.log('[MapPage] /api/listings?' + qs);
+      const res  = await fetch(`/api/listings?${qs}`);
       if (!res.ok) return;
       const data = await res.json();
       const listings = (data.listings || []).filter(l => l.Latitude && l.Longitude);

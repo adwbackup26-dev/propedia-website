@@ -82,6 +82,7 @@ export default async function handler(req, res) {
     `$count=true`,
   ].join('&');
 
+  console.log('[listings] bbox:', { latMin, latMax, lngMin, lngMax });
   console.log('[listings] URL:', `${RESO_BASE}?${qs}`);
 
   try {

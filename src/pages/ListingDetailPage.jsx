@@ -478,6 +478,7 @@ export default function ListingDetailPage() {
   const [error,        setError]        = useState(null);
   const [photoIdx,     setPhotoIdx]     = useState(0);
   const [lightbox,     setLightbox]     = useState(false);
+  const [similar,      setSimilar]      = useState([]);
   const [monthlyTotal, setMonthlyTotal] = useState(null);
 
   useEffect(() => {
@@ -497,6 +498,22 @@ export default function ListingDetailPage() {
       .then(d=>d&&setPhotos(d.photos||[]))
       .catch(()=>null);
   }, [listingKey]);
+
+  useEffect(() => {
+    if (!listing) return;
+    const params = new URLSearchParams({
+      city:    listing.City            || '',
+      type:    listing.PropertySubType || '',
+      price:   listing.ListPrice       || '',
+      exclude: listing.ListingKey      || '',
+      tx:      listing.TransactionType || 'For Sale',
+      limit:   '4',
+    });
+    fetch(`/api/similar?${params}`)
+      .then(r=>r.ok?r.json():null)
+      .then(d=>d&&setSimilar(d.listings||[]))
+      .catch(()=>null);
+  }, [listing]);
 
   if (loading) return (
     <div style={{ background:'#0C0D10', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'DM Sans,system-ui,sans-serif', color:'#fff' }}>
@@ -531,11 +548,12 @@ export default function ListingDetailPage() {
         .detail-grid { display:grid; grid-template-columns:1fr 212px; gap:12px; }
         .mobile-cta  { display:none; }
         @media(max-width:768px){
-          .detail-grid { grid-template-columns:1fr !important; }
+          .detail-grid  { grid-template-columns:1fr !important; }
           .detail-right > * { width:100%; }
           .detail-hero  { height:260px !important; }
           .intel-strip  { display:none !important; }
           .mobile-cta   { display:flex !important; }
+          .similar-grid { grid-template-columns:repeat(2,1fr) !important; }
         }
       `}</style>
 
@@ -665,6 +683,39 @@ export default function ListingDetailPage() {
             <KeyMetrics listing={listing} monthlyTotal={monthlyTotal} isLease={isLease}/>
           </div>
         </div>
+
+        {/* Similar Properties */}
+        {similar.length > 0 && (
+          <div style={{ marginTop:24 }}>
+            <div style={{ ...sh, marginBottom:14 }}><i className="ti ti-home-search" style={shI}/>Similar properties</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }} className="similar-grid">
+              {similar.map(l => {
+                const addr = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || l.UnparsedAddress || '—';
+                return (
+                  <Link key={l.ListingKey} to={`/listing/${l.ListingKey}`} style={{ textDecoration:'none', color:'inherit' }}>
+                    <div style={{ background:'#161719', borderRadius:10, border:'1px solid rgba(255,255,255,.06)', overflow:'hidden', transition:'border-color .2s' }}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(0,180,168,.4)'}
+                      onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(255,255,255,.06)'}
+                    >
+                      <div style={{ height:130, background:BG[Math.abs(l.ListingKey?.charCodeAt(0)||0)%BG.length], position:'relative' }}>
+                        <i className="ti ti-building-estate" style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, color:'rgba(255,255,255,.06)', margin:'auto', lineHeight:'130px', width:'100%', textAlign:'center' }}/>
+                      </div>
+                      <div style={{ padding:'10px 11px' }}>
+                        <div style={{ fontSize:15, fontWeight:600, marginBottom:3 }}>{fmt(l.ListPrice)}</div>
+                        <div style={{ fontSize:11, color:'rgba(255,255,255,.45)', marginBottom:6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{addr}, {l.City}</div>
+                        <div style={{ display:'flex', gap:10, fontSize:11, color:'rgba(255,255,255,.4)' }}>
+                          {l.BedroomsTotal!=null&&<span><i className="ti ti-bed" style={{ fontSize:10 }}/> {l.BedroomsTotal}</span>}
+                          {l.BathroomsTotalInteger!=null&&<span><i className="ti ti-bath" style={{ fontSize:10 }}/> {l.BathroomsTotalInteger}</span>}
+                          {l.DaysOnMarket!=null&&<span><i className="ti ti-clock" style={{ fontSize:10 }}/> {l.DaysOnMarket}d</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         <div style={{ marginTop:20, background:'#111316', borderRadius:12, padding:'28px 24px', textAlign:'center', border:'1px solid rgba(255,255,255,.06)' }}>

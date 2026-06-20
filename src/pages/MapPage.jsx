@@ -182,25 +182,46 @@ export default function MapPage() {
 
   // ── Init map ─────────────────────────────────────────────────────────────
   useEffect(() => {
+    console.log('[MapPage] init effect — token:', !!token, 'map.current:', !!map.current, 'container:', !!mapContainer.current);
     if (!token || map.current) return;
-    mapboxgl.accessToken = token;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style:     'mapbox://styles/mapbox/dark-v11',
-      bounds:    [[-79.64, 43.55], [-78.90, 44.10]], // GTA bbox
-      fitBoundsOptions: { padding: 20 },
-    });
+    if (!mapContainer.current) {
+      console.error('[MapPage] container ref is null — cannot init map');
+      return;
+    }
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    try {
+      mapboxgl.accessToken = token;
+      console.log('[MapPage] accessToken set, creating Map...');
 
-    const onMoveEnd = () => {
-      if (!map.current) return;
-      setFiltersState(f => { fetchAndPlot(map.current.getBounds(), f); return f; });
-    };
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style:     'mapbox://styles/mapbox/dark-v11',
+        bounds:    [[-79.64, 43.55], [-78.90, 44.10]],
+        fitBoundsOptions: { padding: 20 },
+      });
+      console.log('[MapPage] Map instance created');
 
-    map.current.on('load',    onMoveEnd);
-    map.current.on('moveend', onMoveEnd);
+      map.current.on('load', () => {
+        console.log('[MapPage] map load event fired');
+      });
+      map.current.on('error', err => {
+        console.error('[MapPage] map error:', err);
+      });
+
+      map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+
+      const onMoveEnd = () => {
+        if (!map.current) return;
+        console.log('[MapPage] moveend fired');
+        setFiltersState(f => { fetchAndPlot(map.current.getBounds(), f); return f; });
+      };
+
+      map.current.on('load',    onMoveEnd);
+      map.current.on('moveend', onMoveEnd);
+    } catch (err) {
+      console.error('[MapPage] init error:', err);
+    }
 
     return () => { map.current?.remove(); map.current = null; };
   }, [token, fetchAndPlot]);

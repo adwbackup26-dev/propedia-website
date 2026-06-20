@@ -68,8 +68,12 @@ export default function MapPage() {
 
   const setFilters = useCallback(patch => setFiltersState(p => ({ ...p, ...patch })), []);
 
+  // Stable ref so init useEffect never needs fetchAndPlot in its dep array
+  const fetchAndPlotRef = useRef(null);
+
   // ── Plot markers — defined FIRST so fetchAndPlot can close over it ────────
   const plotMarkers = useCallback(listings => {
+    console.log('[MapPage] plotMarkers called with', listings.length, 'listings, map.current:', !!map.current);
     // Remove old markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
@@ -121,11 +125,12 @@ export default function MapPage() {
 
       markersRef.current.push(marker);
     });
+    console.log('[MapPage] plotMarkers done, markers on map:', markersRef.current.length);
   }, []);
 
   // ── Fetch listings + geocode missing coords + plot ───────────────────────
   const fetchAndPlot = useCallback(async (bounds, currentFilters) => {
-    if (!map.current || !token) return;
+    if (!map.current || !token) { console.log('[MapPage] fetchAndPlot skipped — map:', !!map.current, 'token:', !!token); return; }
     setLoading(true);
     try {
       const tx = encodeURIComponent(currentFilters.transactionType || 'For Sale');
@@ -162,7 +167,7 @@ export default function MapPage() {
         .map(r => r.value)
         .filter(l => l.Latitude && l.Longitude);
 
-      console.log(`[MapPage] total=${all.length} withCoords=${withCoords.length}`);
+      console.log(`[MapPage] total=${all.length} withCoords=${withCoords.length}`, withCoords[0] ? `first=(${withCoords[0].Latitude},${withCoords[0].Longitude})` : '');
       setListingCount(withCoords.length);
       plotMarkers(withCoords);
     } catch (err) {
@@ -171,6 +176,9 @@ export default function MapPage() {
       setLoading(false);
     }
   }, [token, plotMarkers]);
+
+  // Keep ref in sync so the stable map init effect always calls the latest version
+  useEffect(() => { fetchAndPlotRef.current = fetchAndPlot; }, [fetchAndPlot]);
 
   // ── Fetch token from server (avoids Vite build-time embedding issues) ────
   useEffect(() => {
@@ -214,7 +222,9 @@ export default function MapPage() {
       const onMoveEnd = () => {
         if (!map.current) return;
         console.log('[MapPage] moveend fired');
-        setFiltersState(f => { fetchAndPlot(map.current.getBounds(), f); return f; });
+        // Call through ref so we always use the latest fetchAndPlot
+        // without re-creating the map when fetchAndPlot changes
+        setFiltersState(f => { fetchAndPlotRef.current?.(map.current.getBounds(), f); return f; });
       };
 
       map.current.on('load',    onMoveEnd);
@@ -224,7 +234,8 @@ export default function MapPage() {
     }
 
     return () => { map.current?.remove(); map.current = null; };
-  }, [token, fetchAndPlot]);
+  // Only depends on token — fetchAndPlot changes are handled via the ref
+  }, [token]);
 
   // ── Re-fetch when filters applied ────────────────────────────────────────
   const applyFilters = useCallback(() => {

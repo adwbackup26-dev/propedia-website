@@ -1,6 +1,6 @@
 // src/pages/MapSearchPage.jsx — Leaflet map search with draw tools
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -24,6 +24,9 @@ function fmt(n) {
   return '$' + Math.round(n).toLocaleString('en-CA');
 }
 
+// ── Module-level geocode cache (survives React re-renders) ────────────────────
+const geocodeCache = new Map();
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GTA = { center: [43.65, -79.4], zoom: 11 };
 
@@ -40,10 +43,11 @@ export default function MapSearchPage() {
   const markersRef    = useRef([]);     // [{ marker, listing }]
   const drawHandlers  = useRef({});
 
-  const [listings,   setListings]   = useState([]);
-  const [filtered,   setFiltered]   = useState(null);   // null = no shape drawn
-  const [activeTool, setActiveTool] = useState(null);   // 'circle' | 'polygon' | null
-  const [loading,    setLoading]    = useState(true);
+  const [listings,        setListings]        = useState([]);
+  const [filtered,        setFiltered]        = useState(null);   // null = no shape drawn
+  const [activeTool,      setActiveTool]      = useState(null);   // 'circle' | 'polygon' | null
+  const [loading,         setLoading]         = useState(true);
+  const [geocodeProgress, setGeocodeProgress] = useState(null);   // { done, total } | null
 
   // ── Init map (once) ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -116,40 +120,96 @@ export default function MapSearchPage() {
     return () => { map.current?.remove(); map.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Fetch listings (4 pages × 50, keep those with coords) ───────────────────
-  useEffect(() => {
-    setLoading(true);
-    console.log('[MapSearch] Fetching listings from API...');
+  // ── Geocode a single listing via Mapbox (with cache) ─────────────────────────
+  const geocodeListing = useCallback(async (listing, mbToken) => {
+    if (listing.Latitude && listing.Longitude) return listing;
 
-    Promise.allSettled([
-      fetch('/api/listings?limit=50&page=1&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
-      fetch('/api/listings?limit=50&page=2&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
-      fetch('/api/listings?limit=50&page=3&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
-      fetch('/api/listings?limit=50&page=4&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
-    ]).then(async results => {
-      console.log('[MapSearch] Fetch results:', results.map(r => r.status));
+    const addr = [listing.UnparsedAddress, listing.City, listing.PostalCode]
+      .filter(Boolean).join(', ');
+    if (!addr) return null;
 
-      const allListings = [];
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          const data = await result.value.json();
-          console.log('[MapSearch] API response — status:', result.value.status, '| listings count:', data.listings?.length ?? 0, '| total:', data.total, '| sample lat/lng:', data.listings?.[0]?.Latitude, data.listings?.[0]?.Longitude);
-          allListings.push(...(data.listings || []));
-        } else {
-          console.error('[MapSearch] Fetch failed:', result.reason);
-        }
-      }
+    if (geocodeCache.has(addr)) {
+      const { lat, lng } = geocodeCache.get(addr);
+      return { ...listing, Latitude: lat, Longitude: lng };
+    }
 
-      console.log('[MapSearch] Total listings fetched:', allListings.length);
-      const withCoords = allListings.filter(l => l.Latitude && l.Longitude);
-      console.log('[MapSearch] Listings with Latitude+Longitude:', withCoords.length, '(will be plotted as markers)');
-      if (withCoords.length === 0 && allListings.length > 0) {
-        console.warn('[MapSearch] ⚠️  All', allListings.length, 'listings are missing coordinates — TRREB Latitude/Longitude fields are empty. Geocoding fallback needed.');
-      }
-      setListings(withCoords);
-      setLoading(false);
-    });
+    try {
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?country=CA&types=address&limit=1&access_token=${mbToken}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      const feat = data.features?.[0];
+      if (!feat) return null;
+      const [lng, lat] = feat.center;
+      geocodeCache.set(addr, { lat, lng });
+      return { ...listing, Latitude: lat, Longitude: lng };
+    } catch {
+      return null;
+    }
   }, []);
+
+  // ── Fetch listings then geocode any missing coords ────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setGeocodeProgress(null);
+
+    (async () => {
+      // 1. Fetch up to 200 listings (4 pages × 50)
+      const pages = await Promise.allSettled([1, 2, 3, 4].map(p =>
+        fetch(`/api/listings?limit=50&page=${p}&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc`)
+          .then(r => r.ok ? r.json() : null)
+      ));
+      if (cancelled) return;
+
+      const allListings = pages
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .flatMap(r => r.value.listings || []);
+
+      if (!allListings.length) { setLoading(false); return; }
+
+      // 2. Split into those with and without coords
+      const hasCoords    = allListings.filter(l => l.Latitude && l.Longitude);
+      const needsGeocode = allListings.filter(l => !l.Latitude || !l.Longitude);
+
+      if (!needsGeocode.length) {
+        if (!cancelled) { setListings(hasCoords); setLoading(false); }
+        return;
+      }
+
+      // 3. Get Mapbox token
+      let mbToken = null;
+      try {
+        const tok = await fetch('/api/maptoken');
+        const tokData = await tok.json();
+        mbToken = tokData.token;
+      } catch { /* no token — skip geocoding */ }
+
+      if (!mbToken) {
+        if (!cancelled) { setListings(hasCoords); setLoading(false); }
+        return;
+      }
+
+      // 4. Geocode in batches of 10 concurrently, updating progress
+      setGeocodeProgress({ done: 0, total: needsGeocode.length });
+      const geocoded = [];
+      const BATCH = 10;
+      for (let i = 0; i < needsGeocode.length; i += BATCH) {
+        if (cancelled) return;
+        const batch = needsGeocode.slice(i, i + BATCH);
+        const results = await Promise.all(batch.map(l => geocodeListing(l, mbToken)));
+        results.forEach(l => { if (l) geocoded.push(l); });
+        if (!cancelled) setGeocodeProgress({ done: Math.min(i + BATCH, needsGeocode.length), total: needsGeocode.length });
+      }
+
+      if (!cancelled) {
+        setListings([...hasCoords, ...geocoded]);
+        setGeocodeProgress(null);
+        setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [geocodeListing]);
 
   // ── Plot circle markers when listings arrive ───────────────────────────────
   useEffect(() => {
@@ -318,7 +378,9 @@ export default function MapSearchPage() {
         {loading && (
           <div style={{ position:'absolute', top:12, left:'50%', transform:'translateX(-50%)', background:'rgba(22,23,25,.93)', border:'1px solid rgba(255,255,255,.1)', borderRadius:8, padding:'8px 16px', fontSize:12, color:'rgba(255,255,255,.6)', zIndex:1000, pointerEvents:'none', display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ display:'inline-block', width:10, height:10, border:'2px solid #00B4A8', borderTopColor:'transparent', borderRadius:'50%', animation:'mapspin .8s linear infinite' }}/>
-            Loading listings…
+            {geocodeProgress
+              ? `Geocoding addresses… ${geocodeProgress.done}/${geocodeProgress.total}`
+              : 'Loading listings…'}
           </div>
         )}
 

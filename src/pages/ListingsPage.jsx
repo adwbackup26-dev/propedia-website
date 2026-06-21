@@ -1,13 +1,14 @@
 // src/pages/ListingsPage.jsx — Propedia marketplace homepage
 // Dark theme · slim nav · filter modal · 2-column grid · photo carousel cards
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal, { PROP_TYPES, DEFAULT_MODAL } from '../components/FilterModal.jsx';
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
 import CompareBar from '../components/CompareBar.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
 import { useListings, useCompare, getVOWSession, getUserPrefs } from '../hooks/useListings.js';
+import { computeMatchScore } from '../utils/format.js';
 import '../styles/listings.css';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -375,6 +376,83 @@ function countActive(m) {
   ].filter(Boolean).length;
 }
 
+// ── Sort options ──────────────────────────────────────────────────────────────
+const SORT_OPTIONS = [
+  { id: 'relevance',    label: 'Relevance',               sortBy: 'ModificationTimestamp', sortDir: 'desc',  clientSort: null },
+  { id: 'price-asc',   label: 'Price: Low to High',       sortBy: 'ListPrice',             sortDir: 'asc',   clientSort: null },
+  { id: 'price-desc',  label: 'Price: High to Low',       sortBy: 'ListPrice',             sortDir: 'desc',  clientSort: null },
+  { id: 'newest',      label: 'Newest Listed',            sortBy: 'ModificationTimestamp', sortDir: 'desc',  clientSort: null },
+  { id: 'oldest',      label: 'Oldest Listed',            sortBy: 'ModificationTimestamp', sortDir: 'asc',   clientSort: null },
+  { id: 'dom-asc',     label: 'Days on Market: Fewest',   sortBy: 'DaysOnMarket',          sortDir: 'asc',   clientSort: null },
+  { id: 'dom-desc',    label: 'Days on Market: Most',     sortBy: 'DaysOnMarket',          sortDir: 'desc',  clientSort: null },
+  { id: 'score-desc',  label: 'Propedia Score: Highest',  sortBy: 'ModificationTimestamp', sortDir: 'desc',  clientSort: 'score-desc' },
+  { id: 'score-asc',   label: 'Propedia Score: Lowest',   sortBy: 'ModificationTimestamp', sortDir: 'desc',  clientSort: 'score-asc'  },
+];
+
+// ── Sort dropdown ─────────────────────────────────────────────────────────────
+function SortDropdown({ current, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const opt = SORT_OPTIONS.find(o => o.id === current) || SORT_OPTIONS[0];
+
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position:'relative', flexShrink:0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display:'flex', alignItems:'center', gap:5,
+          height:32, padding:'0 10px', borderRadius:7,
+          border:'1px solid rgba(255,255,255,.14)',
+          background:'rgba(255,255,255,.05)',
+          color:'rgba(255,255,255,.7)', fontSize:12, fontWeight:500,
+          cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap',
+        }}
+      >
+        <i className="ti ti-arrows-sort" style={{ fontSize:12 }}/>
+        Sort: {opt.label}
+        <i className={`ti ti-chevron-${open ? 'up' : 'down'}`} style={{ fontSize:10, marginLeft:2 }}/>
+      </button>
+
+      {open && (
+        <div style={{
+          position:'absolute', top:'calc(100% + 4px)', right:0, zIndex:400,
+          background:'#161719', border:'1px solid rgba(255,255,255,.12)',
+          borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,.55)',
+          minWidth:200, overflow:'hidden',
+        }}>
+          {SORT_OPTIONS.map((o, i) => {
+            const active = o.id === current;
+            return (
+              <div
+                key={o.id}
+                onMouseDown={e => { e.preventDefault(); onChange(o.id); setOpen(false); }}
+                style={{
+                  padding:'9px 14px', fontSize:12, cursor:'pointer',
+                  display:'flex', alignItems:'center', gap:8,
+                  background: active ? 'rgba(0,180,168,.1)' : 'transparent',
+                  color: active ? '#00B4A8' : 'rgba(255,255,255,.75)',
+                  borderBottom: i < SORT_OPTIONS.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none',
+                  fontWeight: active ? 600 : 400,
+                }}
+              >
+                {active && <i className="ti ti-check" style={{ fontSize:11, flexShrink:0 }}/>}
+                {!active && <span style={{ width:11, flexShrink:0 }}/>}
+                {o.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ListingsPage() {
   const { listings, total, pages, page, filters, loading, error,
@@ -384,6 +462,7 @@ export default function ListingsPage() {
 
   const [modalOpen,  setModalOpen]  = useState(false);
   const [viewMode,   setViewMode]   = useState('grid');
+  const [sortId,     setSortId]     = useState(() => new URLSearchParams(window.location.search).get('sort') || 'relevance');
   const [vowOpen,    setVowOpen]    = useState(false);
   const [hasVOW,     setHasVOW]     = useState(() => getVOWSession());
   const [userPrefs,  setUserPrefs]  = useState(() => getUserPrefs());
@@ -465,6 +544,7 @@ export default function ListingsPage() {
   // ── Apply filters from modal ────────────────────────────────────────────────
   const handleApplyFilters = useCallback(m => {
     const pt = PROP_TYPES.find(p => p.id === m.propType) || PROP_TYPES[0];
+    const sortOpt = SORT_OPTIONS.find(o => o.id === sortId) || SORT_OPTIONS[0];
     applyWith({
       transactionType: pt.tx,
       propertyType:    pt.pt,
@@ -475,6 +555,8 @@ export default function ListingsPage() {
       minParking:      m.parking,
       structures:      m.structures.join(','),
       propertySubType: '',   // structures supersedes legacy propertySubType
+      sortBy:          sortOpt.sortBy,
+      sortDir:         sortOpt.sortDir,
     });
     setModalValues(m);
     // sync URL for shareable links
@@ -485,8 +567,31 @@ export default function ListingsPage() {
   const handleReset = useCallback(() => {
     resetFilters();
     setModalValues(DEFAULT_MODAL);
+    setSortId('relevance');
     window.history.replaceState(null, '', window.location.pathname);
   }, [resetFilters]);
+
+  const handleSort = useCallback(id => {
+    setSortId(id);
+    const opt = SORT_OPTIONS.find(o => o.id === id) || SORT_OPTIONS[0];
+    // Client-sort options don't change the API order; server-sort options do
+    if (!opt.clientSort) {
+      applyWith({ sortBy: opt.sortBy, sortDir: opt.sortDir });
+    }
+    // Update URL
+    const sp = new URLSearchParams(window.location.search);
+    if (id === 'relevance') sp.delete('sort'); else sp.set('sort', id);
+    window.history.replaceState(null, '', sp.toString() ? `?${sp}` : window.location.pathname);
+  }, [applyWith]);
+
+  // Client-side score sort (Propedia Score options)
+  const currentOpt = SORT_OPTIONS.find(o => o.id === sortId) || SORT_OPTIONS[0];
+  const displayListings = useMemo(() => {
+    if (!currentOpt.clientSort) return listings;
+    const scored = listings.map(l => ({ l, score: computeMatchScore(l, userPrefs) ?? 50 }));
+    scored.sort((a, b) => currentOpt.clientSort === 'score-desc' ? b.score - a.score : a.score - b.score);
+    return scored.map(x => x.l);
+  }, [listings, currentOpt, userPrefs]);
 
   const isLease   = filters.transactionType === 'For Lease';
   const activeCount = countActive(modalValues);
@@ -588,12 +693,15 @@ export default function ListingsPage() {
                 : <><strong>{total.toLocaleString()}</strong> {isLease ? 'rentals' : 'homes'} for {isLease ? 'lease' : 'sale'} in the GTA</>
               }
             </span>
-            <div className="view-toggle" role="group" aria-label="View mode">
-              <button className={`view-btn${viewMode==='grid'?' active':''}`} onClick={() => setViewMode('grid')} aria-label="Grid view" aria-pressed={viewMode==='grid'} title="Grid"><GridIcon /></button>
-              <button className={`view-btn${viewMode==='list'?' active':''}`} onClick={() => setViewMode('list')} aria-label="List view" aria-pressed={viewMode==='list'} title="List"><ListIcon /></button>
-              <button className="view-btn" onClick={() => navigate('/map')} aria-label="Map view" title="Map" style={{ display:'flex', alignItems:'center', gap:4, padding:'0 8px', fontSize:11 }}>
-                <i className="ti ti-map-2" style={{ fontSize:13 }}/>Map
-              </button>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <div className="view-toggle" role="group" aria-label="View mode">
+                <button className={`view-btn${viewMode==='grid'?' active':''}`} onClick={() => setViewMode('grid')} aria-label="Grid view" aria-pressed={viewMode==='grid'} title="Grid"><GridIcon /></button>
+                <button className={`view-btn${viewMode==='list'?' active':''}`} onClick={() => setViewMode('list')} aria-label="List view" aria-pressed={viewMode==='list'} title="List"><ListIcon /></button>
+                <button className="view-btn" onClick={() => navigate('/map')} aria-label="Map view" title="Map" style={{ display:'flex', alignItems:'center', gap:4, padding:'0 8px', fontSize:11 }}>
+                  <i className="ti ti-map-2" style={{ fontSize:13 }}/>Map
+                </button>
+              </div>
+              <SortDropdown current={sortId} onChange={handleSort}/>
             </div>
           </div>
 
@@ -617,7 +725,7 @@ export default function ListingsPage() {
                     <button className="reset-btn" onClick={handleReset}>Clear all filters</button>
                   </div>
                 )
-                : listings.map(l => (
+                : displayListings.map(l => (
                   <ListingCard key={l.ListingKey} listing={l} isSaved={isSaved(l.ListingKey)}
                     onSave={toggleSave} userPrefs={userPrefs} listView={viewMode==='list'}/>
                 ))

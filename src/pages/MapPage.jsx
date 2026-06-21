@@ -211,45 +211,41 @@ export default function MapPage() {
       return;
     }
 
-    try {
-      mapboxgl.accessToken = token;
-      console.log('[MapPage] accessToken set, creating Map...');
+    const el = mapContainer.current;
+    if (!el) { console.error('[MapPage] container ref null'); return; }
 
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style:     'mapbox://styles/mapbox/dark-v11',
-        center:    [-79.4, 43.7],
-        zoom:      10,
-        pitch:     0,
-        bearing:   0,
-      });
-      console.log('[MapPage] Map instance created');
+    let cancelled = false;
+    const tid = setTimeout(() => {
+      if (cancelled || map.current) return;
+      console.log('[MapPage] container size at init:', el.offsetWidth, 'x', el.offsetHeight);
+      try {
+        mapboxgl.accessToken = token;
+        map.current = new mapboxgl.Map({
+          container: el,
+          style:     'mapbox://styles/mapbox/dark-v11',
+          center:    [-79.4, 43.7],
+          zoom:      10,
+        });
+        console.log('[MapPage] Map instance created');
 
-      map.current.on('load', () => {
-        console.log('[MapPage] map load event fired');
-      });
-      map.current.on('error', err => {
-        console.error('[MapPage] map error:', err);
-      });
+        map.current.on('error', err => console.error('[MapPage] map error:', err));
+        map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+        map.current.on('load', () => {
+          console.log('[MapPage] map loaded, canvas:', map.current.getCanvas().offsetWidth, 'x', map.current.getCanvas().offsetHeight);
+          setFiltersState(f => { fetchAndPlotRef.current?.(map.current.getBounds(), f); return f; });
+        });
 
-      const onMoveEnd = () => {
-        if (!map.current) return;
-        console.log('[MapPage] moveend fired');
-        // Call through ref so we always use the latest fetchAndPlot
-        // without re-creating the map when fetchAndPlot changes
-        setFiltersState(f => { fetchAndPlotRef.current?.(map.current.getBounds(), f); return f; });
-      };
+        map.current.on('moveend', () => {
+          if (!map.current) return;
+          setFiltersState(f => { fetchAndPlotRef.current?.(map.current.getBounds(), f); return f; });
+        });
+      } catch (err) {
+        console.error('[MapPage] init error:', err);
+      }
+    }, 100);
 
-      map.current.on('load',    onMoveEnd);
-      map.current.on('moveend', onMoveEnd);
-    } catch (err) {
-      console.error('[MapPage] init error:', err);
-    }
-
-    return () => { map.current?.remove(); map.current = null; };
-  // Only depends on token — fetchAndPlot changes are handled via the ref
+    return () => { cancelled = true; clearTimeout(tid); map.current?.remove(); map.current = null; };
   }, [token]);
 
   // ── Re-fetch when filters applied ────────────────────────────────────────

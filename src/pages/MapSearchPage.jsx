@@ -116,18 +116,37 @@ export default function MapSearchPage() {
     return () => { map.current?.remove(); map.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Fetch listings (4 pages × 50 = up to 200, keep those with coords) ────────
+  // ── Fetch listings (4 pages × 50, keep those with coords) ───────────────────
   useEffect(() => {
     setLoading(true);
-    Promise.allSettled([1, 2, 3, 4].map(p =>
-      fetch(`/api/listings?limit=50&page=${p}&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc`)
-        .then(r => r.ok ? r.json() : null)
-    )).then(results => {
-      const all = results
-        .filter(r => r.status === 'fulfilled' && r.value)
-        .flatMap(r => r.value.listings || [])
-        .filter(l => l.Latitude && l.Longitude);
-      setListings(all);
+    console.log('[MapSearch] Fetching listings from API...');
+
+    Promise.allSettled([
+      fetch('/api/listings?limit=50&page=1&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
+      fetch('/api/listings?limit=50&page=2&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
+      fetch('/api/listings?limit=50&page=3&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
+      fetch('/api/listings?limit=50&page=4&transactionType=For%20Sale&sortBy=ModificationTimestamp&sortDir=desc'),
+    ]).then(async results => {
+      console.log('[MapSearch] Fetch results:', results.map(r => r.status));
+
+      const allListings = [];
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const data = await result.value.json();
+          console.log('[MapSearch] API response — status:', result.value.status, '| listings count:', data.listings?.length ?? 0, '| total:', data.total, '| sample lat/lng:', data.listings?.[0]?.Latitude, data.listings?.[0]?.Longitude);
+          allListings.push(...(data.listings || []));
+        } else {
+          console.error('[MapSearch] Fetch failed:', result.reason);
+        }
+      }
+
+      console.log('[MapSearch] Total listings fetched:', allListings.length);
+      const withCoords = allListings.filter(l => l.Latitude && l.Longitude);
+      console.log('[MapSearch] Listings with Latitude+Longitude:', withCoords.length, '(will be plotted as markers)');
+      if (withCoords.length === 0 && allListings.length > 0) {
+        console.warn('[MapSearch] ⚠️  All', allListings.length, 'listings are missing coordinates — TRREB Latitude/Longitude fields are empty. Geocoding fallback needed.');
+      }
+      setListings(withCoords);
       setLoading(false);
     });
   }, []);

@@ -455,16 +455,19 @@ export default function MapSearchPage() {
       </div>
 
       {/* ── Results panel ───────────────────────────────────────────────────── */}
-      {showResults && (
+      {hasShape && (
         <div style={{ background:'#161719', borderTop:'1px solid rgba(255,255,255,.08)', flexShrink:0 }}>
           {/* Header */}
           <div style={{ padding:'9px 14px 5px', display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:12, color:'rgba(255,255,255,.55)' }}>
-              <strong style={{ color:'#00B4A8', fontSize:14 }}>{resultCount}</strong>{' '}
-              {resultCount === 1 ? 'property' : 'properties'} found in selected area
-            </span>
-            {resultCount === 0 && (
-              <span style={{ fontSize:11, color:'rgba(255,255,255,.3)', marginLeft:4 }}>— try a larger shape</span>
+            {resultCount > 0 ? (
+              <span style={{ fontSize:12, color:'rgba(255,255,255,.55)' }}>
+                <strong style={{ color:'#00B4A8', fontSize:14 }}>{resultCount}</strong>{' '}
+                {resultCount === 1 ? 'property' : 'properties'} found in selected area
+              </span>
+            ) : (
+              <span style={{ fontSize:12, color:'rgba(255,255,255,.35)' }}>
+                No properties found in selected area — try a larger shape
+              </span>
             )}
           </div>
 

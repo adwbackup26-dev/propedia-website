@@ -72,6 +72,7 @@ export default function MapSearchPage() {
 
     // When a shape is finished
     map.current.on(L.Draw.Event.CREATED, e => {
+      console.log('[MapSearch] draw:created fired, layerType:', e.layerType);
       drawnLayer.current.clearLayers();
       drawnLayer.current.addLayer(e.layer);
       setActiveTool(null);
@@ -81,19 +82,32 @@ export default function MapSearchPage() {
       if (e.layerType === 'circle') {
         const { lat, lng } = e.layer.getLatLng();
         const radius = e.layer.getRadius();
-        markersRef.current.forEach(({ marker, listing }) => {
-          const hit = haversine(lat, lng, listing.Latitude, listing.Longitude) <= radius;
+        console.log('[MapSearch] Circle drawn — center:', lat, lng, '| radius (m):', radius);
+        console.log('[MapSearch] Total markers in ref:', markersRef.current.length);
+
+        markersRef.current.forEach(({ marker, listing }, i) => {
+          const dist = haversine(lat, lng, listing.Latitude, listing.Longitude);
+          if (i < 3) console.log(`[MapSearch] Listing #${i} lat=${listing.Latitude} lng=${listing.Longitude} dist=${Math.round(dist)}m radius=${Math.round(radius)}m hit=${dist <= radius}`);
+          const hit = dist <= radius;
           marker.setStyle(hit ? STYLE_ON : STYLE_DIM);
           if (hit) inside.push(listing);
         });
+
+        console.log('[MapSearch] Circle filter — listings total:', markersRef.current.length, '| inside:', inside.length);
+
       } else if (e.layerType === 'polygon') {
         const ring    = e.layer.getLatLngs()[0];
-        const polygon = ring.map(ll => [ll.lng, ll.lat]);   // [x=lng, y=lat] for pip
-        markersRef.current.forEach(({ marker, listing }) => {
+        const polygon = ring.map(ll => [ll.lng, ll.lat]);
+        console.log('[MapSearch] Polygon drawn — points:', ring.length, '| markers:', markersRef.current.length);
+
+        markersRef.current.forEach(({ marker, listing }, i) => {
           const hit = pip([listing.Longitude, listing.Latitude], polygon);
+          if (i < 3) console.log(`[MapSearch] Listing #${i} lng=${listing.Longitude} lat=${listing.Latitude} hit=${!!hit}`);
           marker.setStyle(hit ? STYLE_ON : STYLE_DIM);
           if (hit) inside.push(listing);
         });
+
+        console.log('[MapSearch] Polygon filter — listings total:', markersRef.current.length, '| inside:', inside.length);
       }
 
       setFiltered(inside);
@@ -124,6 +138,9 @@ export default function MapSearchPage() {
 
     markersRef.current.forEach(({ marker }) => marker.remove());
     markersRef.current = [];
+
+    console.log('[MapSearch] Plotting', listings.length, 'listings as markers');
+    if (listings[0]) console.log('[MapSearch] First listing sample — lat:', listings[0].Latitude, 'lng:', listings[0].Longitude, 'key:', listings[0].ListingKey);
 
     listings.forEach(listing => {
       const marker = L.circleMarker([listing.Latitude, listing.Longitude], STYLE_ON)
@@ -178,9 +195,9 @@ export default function MapSearchPage() {
 
   // ── Toolbar actions ───────────────────────────────────────────────────────────
   const activateTool = tool => {
-    // Disable any active handler
     Object.values(drawHandlers.current).forEach(h => { try { h.disable(); } catch {} });
     if (activeTool === tool) { setActiveTool(null); return; }
+    console.log('[MapSearch] Enabling draw tool:', tool, '| handler:', !!drawHandlers.current[tool]);
     drawHandlers.current[tool]?.enable();
     setActiveTool(tool);
   };

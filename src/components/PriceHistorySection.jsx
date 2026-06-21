@@ -5,7 +5,7 @@
 //   OriginalListPrice  — price when first listed
 //   ListPrice          — current asking price
 //   ClosePrice         — sale price (if sold)
-//   ListDate           — date listed
+//   ModificationTimestamp — used as listing date (ListDate doesn't exist in TRREB)
 //   CloseDate          — date sold (if sold)
 //   DaysOnMarket       — DOM counter
 
@@ -30,7 +30,7 @@ function buildHistory(listing) {
   const events = [];
   const {
     OriginalListPrice, ListPrice, ClosePrice,
-    ListDate, CloseDate, ModificationTimestamp,
+    CloseDate, ModificationTimestamp,
     StandardStatus,
   } = listing;
 
@@ -39,7 +39,7 @@ function buildHistory(listing) {
   // 1. Listed event
   if (originalPrice) {
     events.push({
-      date:   ListDate || ModificationTimestamp,
+      date:   ModificationTimestamp,
       event:  'Listed',
       price:  originalPrice,
       change: null,
@@ -135,7 +135,7 @@ function HistoryTable({ rows }) {
 function buildPlaceholderRows(listing) {
   const price = listing.ListPrice || 1000000;
   const rows = [
-    { date: listing.ListDate || listing.ModificationTimestamp, event: 'Listed',        price, change: null },
+    { date: listing.ModificationTimestamp, event: 'Listed', price, change: null },
   ];
   if (listing.OriginalListPrice && listing.OriginalListPrice !== listing.ListPrice) {
     rows.push({ date: listing.ModificationTimestamp, event: 'Price reduced', price: listing.ListPrice, change: listing.ListPrice - listing.OriginalListPrice });
@@ -153,7 +153,7 @@ export default function PriceHistorySection({ listing, isVOWMember, onSignupClic
   const placeholder  = useMemo(() => buildPlaceholderRows(listing), [listing]);
 
   const dom      = listing.DaysOnMarket;
-  const listDate = fmtDate(listing.ListDate || listing.ModificationTimestamp);
+  const listDate = fmtDate(listing.ModificationTimestamp);
   const hasEvents = history.length > 0;
 
   return (

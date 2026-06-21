@@ -700,6 +700,9 @@ export default function ListingsPage() {
                 <button className="view-btn" onClick={() => navigate('/map')} aria-label="Map view" title="Map" style={{ display:'flex', alignItems:'center', gap:4, padding:'0 8px', fontSize:11 }}>
                   <i className="ti ti-map-2" style={{ fontSize:13 }}/>Map
                 </button>
+                <button className="view-btn" onClick={() => navigate('/mapsearch')} aria-label="Draw map search" title="Draw to search" style={{ display:'flex', alignItems:'center', gap:4, padding:'0 8px', fontSize:11 }}>
+                  <i className="ti ti-pencil" style={{ fontSize:13 }}/>Draw
+                </button>
               </div>
               <SortDropdown current={sortId} onChange={handleSort}/>
             </div>

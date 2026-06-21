@@ -346,11 +346,7 @@ function PropertyMap({ listing }) {
           <button style={{ height:26, padding:'0 10px', border:'none', background:'#00B4A8', color:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Street</button>
           <button style={{ height:26, padding:'0 10px', border:'none', background:'transparent', color:'rgba(255,255,255,.4)', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>Satellite</button>
         </div>
-        {lat && lng && (
-          <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noopener noreferrer" style={{ height:26, padding:'0 12px', border:'1px solid rgba(255,255,255,.12)', borderRadius:6, color:'rgba(255,255,255,.45)', fontSize:11, display:'flex', alignItems:'center', gap:5, textDecoration:'none' }}>
-            <i className="ti ti-external-link" style={{ fontSize:11 }}/>Open in Maps
-          </a>
-        )}
+        {/* placeholder — Google Maps button rendered below the map image */}
       </div>
       <div style={{ borderRadius:8, overflow:'hidden', position:'relative' }}>
         {mapUrl
@@ -387,6 +383,25 @@ function PropertyMap({ listing }) {
           {['+','−'].map(s=><button key={s} style={{ width:24, height:24, background:'rgba(20,22,26,.9)', border:'1px solid rgba(255,255,255,.12)', borderRadius:s==='+'?'4px 4px 0 0':'0 0 4px 4px', color:'#fff', fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', borderTop:s==='−'?'none':undefined }}>{s}</button>)}
         </div>
       </div>
+      {/* ── View on Google Maps ── */}
+      <a
+        href={`https://www.google.com/maps/search/${encodeURIComponent([listing.UnparsedAddress, listing.City, listing.PostalCode].filter(Boolean).join(', '))}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+          marginTop:10, height:44, borderRadius:8, textDecoration:'none',
+          background:'rgba(0,180,168,.15)', border:'1px solid #00B4A8',
+          color:'#00B4A8', fontSize:13, fontWeight:600, fontFamily:'inherit',
+          transition:'background .15s, color .15s',
+        }}
+        onMouseEnter={e=>{e.currentTarget.style.background='#00B4A8';e.currentTarget.style.color='#fff';}}
+        onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,180,168,.15)';e.currentTarget.style.color='#00B4A8';}}
+      >
+        <i className="ti ti-map-pin" style={{ fontSize:14 }}/>
+        View on Google Maps →
+      </a>
+
       <div style={{ display:'flex', gap:12, marginTop:10, flexWrap:'wrap' }}>
         {[['#60A5FA','School (0.4 km)'],['#A78BFA','Transit (0.1 km)'],['#34D399','Grocery (0.7 km)']].map(([c,l])=>(
           <div key={l} style={{ display:'flex', alignItems:'center', gap:5 }}>

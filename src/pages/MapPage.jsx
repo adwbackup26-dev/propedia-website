@@ -139,6 +139,15 @@ export default function MapPage() {
       markersRef.current.push(marker);
     });
     console.log('[MapPage] plotMarkers done, markers on map:', markersRef.current.length);
+    // DOM audit — runs after current call stack so Mapbox has appended the elements
+    setTimeout(() => {
+      const domMarkers = document.querySelectorAll('.mapboxgl-marker');
+      console.log('[MapPage] DOM .mapboxgl-marker count:', domMarkers.length);
+      if (domMarkers[0]) {
+        const s = window.getComputedStyle(domMarkers[0]);
+        console.log('[MapPage] first marker computed — display:', s.display, 'opacity:', s.opacity, 'visibility:', s.visibility, 'z-index:', s.zIndex, 'transform:', s.transform);
+      }
+    }, 200);
   }, []);
 
   // ── Fetch listings + geocode missing coords + plot ───────────────────────
@@ -277,8 +286,9 @@ export default function MapPage() {
   return (
     <div style={{ position:'relative', width:'100%', height:'100vh', fontFamily:'DM Sans,system-ui,sans-serif' }}>
       <style>{`
-        .mapboxgl-canvas { display: block !important; }
-        .mapboxgl-marker { cursor: pointer; }
+        .mapboxgl-canvas { display: block !important; z-index: 0; }
+        .mapboxgl-marker { z-index: 10 !important; display: block !important; opacity: 1 !important; cursor: pointer; }
+        .mapboxgl-map { overflow: visible !important; }
         .propedia-popup .mapboxgl-popup-content {
           background: transparent; padding: 0; box-shadow: none; border-radius: 0;
         }

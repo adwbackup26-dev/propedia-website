@@ -20,6 +20,8 @@ export default async function handler(req, res) {
     maxPrice        = '',
     minBeds         = '',
     minBaths        = '',
+    minParking      = '',
+    structures      = '',
     propertySubType = '',
     city            = '',
     search          = '',
@@ -45,13 +47,44 @@ export default async function handler(req, res) {
     filters.push("PropertyType eq 'Commercial'");
   }
 
-  if (minPrice)        filters.push(`ListPrice ge ${parseInt(minPrice)}`);
-  if (maxPrice)        filters.push(`ListPrice le ${parseInt(maxPrice)}`);
-  if (minBeds)         filters.push(`BedroomsTotal ge ${parseInt(minBeds)}`);
-  if (minBaths)        filters.push(`BathroomsTotalInteger ge ${parseInt(minBaths)}`);
-  if (propertySubType) filters.push(`PropertySubType eq '${propertySubType}'`);
-  if (city)            filters.push(`City eq '${city}'`);
-  if (search)          filters.push(`contains(StreetName,'${search.replace(/'/g, "''")}')`);
+  if (minPrice)   filters.push(`ListPrice ge ${parseInt(minPrice)}`);
+  if (maxPrice)   filters.push(`ListPrice le ${parseInt(maxPrice)}`);
+  if (minBeds)    filters.push(`BedroomsTotal ge ${parseInt(minBeds)}`);
+  if (minBaths)   filters.push(`BathroomsTotalInteger ge ${parseInt(minBaths)}`);
+  if (minParking) filters.push(`ParkingSpaces ge ${parseInt(minParking)}`);
+  if (city)       filters.push(`City eq '${city}'`);
+  if (search)     filters.push(`contains(StreetName,'${search.replace(/'/g, "''")}')`);
+
+  // structures: comma-separated list → PropertySubType OR filter
+  // mapping: Freehold→PropertyType, Detached/Semi-Detached/Townhouse/Condo→PropertySubType
+  if (structures) {
+    const list = structures.split(',').map(s => s.trim()).filter(Boolean);
+    if (list.length > 0) {
+      const SUBTYPE_MAP = {
+        'Freehold':      null,                 // handled via PropertyType
+        'Detached':      'Detached',
+        'Semi-Detached': 'Semi-Detached',
+        'Townhouse':     'Att/Row/Twnhouse',
+        'Condo':         'Condo Apt',
+      };
+      const subtypeClauses = list
+        .filter(s => SUBTYPE_MAP[s])
+        .map(s => `PropertySubType eq '${SUBTYPE_MAP[s]}'`);
+      const hasFreehold = list.includes('Freehold');
+      const allClauses = [
+        ...subtypeClauses,
+        ...(hasFreehold ? ["PropertyType eq 'Residential Freehold'"] : []),
+      ];
+      if (allClauses.length === 1) {
+        filters.push(allClauses[0]);
+      } else if (allClauses.length > 1) {
+        filters.push(`(${allClauses.join(' or ')})`);
+      }
+    }
+  } else if (propertySubType) {
+    filters.push(`PropertySubType eq '${propertySubType}'`);
+  }
+
   const select = [
     'ListingKey', 'ListingId', 'StandardStatus', 'TransactionType',
     'ListPrice', 'OriginalListPrice',
@@ -64,6 +97,7 @@ export default async function handler(req, res) {
     'ListAgentFullName', 'ListOfficeName',
     'ModificationTimestamp',
     'Latitude', 'Longitude',
+    'ParkingSpaces',
   ].join(',');
 
   const qs = [

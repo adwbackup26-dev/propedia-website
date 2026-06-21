@@ -9,6 +9,8 @@ export const DEFAULT_FILTERS = {
   maxPrice:        '',
   minBeds:         '',
   minBaths:        '',
+  minParking:      '',
+  structures:      '',
   propertySubType: '',
   city:            '',
   postalCode:      '',

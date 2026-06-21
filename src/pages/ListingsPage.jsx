@@ -1,9 +1,9 @@
 // src/pages/ListingsPage.jsx — Propedia marketplace homepage
-// Dark theme · slim nav · dropdown filters · 2-column grid · photo carousel cards
+// Dark theme · slim nav · filter modal · 2-column grid · photo carousel cards
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Filters from '../components/Filters.jsx';
+import FilterModal, { PROP_TYPES, DEFAULT_MODAL } from '../components/FilterModal.jsx';
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
 import CompareBar from '../components/CompareBar.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
@@ -23,12 +23,10 @@ const AC_CITIES = [
   'Collingwood','Guelph','Hamilton','Kitchener','Waterloo','Cambridge',
 ];
 const AC_HOODS = [
-  // Toronto
   'Etobicoke','Scarborough','North York','East York','York','Downtown Toronto',
   'Midtown Toronto','The Beaches','Leslieville','Riverdale','Roncesvalles',
   'Junction','Bloor West Village','Lawrence Park','Forest Hill','Rosedale',
   'Moore Park','Leaside','Don Mills','Agincourt','Malvern','Rouge','Woburn',
-  // Mississauga
   'Port Credit','Streetsville','Meadowvale','Erin Mills','Cooksville',
   'Clarkson','Lakeview','Applewood','Malton',
 ];
@@ -36,7 +34,6 @@ const AC_ALL = [
   ...AC_CITIES.map(v => ({ label: v, type: 'city' })),
   ...AC_HOODS.map(v => ({ label: v, type: 'hood' })),
 ];
-
 function getSuggestions(q) {
   if (!q || q.length < 2) return [];
   const lq = q.toLowerCase();
@@ -66,86 +63,134 @@ function Pagination({ page, pages, onPageChange }) {
   );
 }
 
-// ── Active filter summary (shown in Filters button label) ────────────────────
-function filterSummary(filters) {
-  const parts = [];
-  if (filters.transactionType === 'For Lease') parts.push('Rent');
-  if (filters.minPrice) parts.push(`$${parseInt(filters.minPrice)/1000|0}K+`);
-  if (filters.maxPrice) parts.push(`under $${parseInt(filters.maxPrice)/1000|0}K`);
-  if (filters.minBeds)  parts.push(`${filters.minBeds}+ bd`);
-  if (filters.minBaths) parts.push(`${filters.minBaths}+ ba`);
-  if (filters.propertySubType) parts.push(filters.propertySubType);
-  return parts.length ? ` · ${parts.join(' · ')}` : '';
+// ── URL ↔ modal state helpers ─────────────────────────────────────────────────
+function modalToURL(m) {
+  const sp = new URLSearchParams();
+  if (m.propType   !== 'res-sale') sp.set('pt',       m.propType);
+  if (m.minPrice)                  sp.set('minPrice',  m.minPrice);
+  if (m.maxPrice)                  sp.set('maxPrice',  m.maxPrice);
+  if (m.beds)                      sp.set('beds',      m.beds);
+  if (m.baths)                     sp.set('baths',     m.baths);
+  if (m.parking)                   sp.set('parking',   m.parking);
+  if (m.structures.length)         sp.set('st',        m.structures.join(','));
+  return sp.toString();
+}
+
+function urlToModal() {
+  const sp = new URLSearchParams(window.location.search);
+  const stRaw = sp.get('st') || '';
+  return {
+    propType:   sp.get('pt')       || 'res-sale',
+    minPrice:   sp.get('minPrice') || '',
+    maxPrice:   sp.get('maxPrice') || '',
+    beds:       sp.get('beds')     || '',
+    baths:      sp.get('baths')    || '',
+    parking:    sp.get('parking')  || '',
+    structures: stRaw ? stRaw.split(',').filter(Boolean) : [],
+  };
+}
+
+// ── active filter count for Filters button badge ──────────────────────────────
+function countActive(m) {
+  return [
+    m.propType !== 'res-sale',
+    !!m.minPrice, !!m.maxPrice,
+    !!m.beds, !!m.baths, !!m.parking,
+    m.structures.length > 0,
+  ].filter(Boolean).length;
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ListingsPage() {
   const { listings, total, pages, page, filters, loading, error,
-          setFilters, applyFilters, applyWith, resetFilters, goToPage } = useListings();
+          applyWith, resetFilters, goToPage } = useListings();
   const { saved, toggleSave, isSaved, clearAll } = useCompare();
   const navigate = useNavigate();
 
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [viewMode,    setViewMode]    = useState('grid');
-  const [vowOpen,     setVowOpen]     = useState(false);
-  const [hasVOW,      setHasVOW]      = useState(() => getVOWSession());
-  const [userPrefs,   setUserPrefs]   = useState(() => getUserPrefs());
-  const [search,      setSearch]      = useState('');
-  const [activeTab,   setActiveTab]   = useState('res-sale');
-  const [acOpen,      setAcOpen]      = useState(false);
-  const [acIdx,       setAcIdx]       = useState(-1);
-  const searchWrapRef = useRef(null);
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [viewMode,   setViewMode]   = useState('grid');
+  const [vowOpen,    setVowOpen]    = useState(false);
+  const [hasVOW,     setHasVOW]     = useState(() => getVOWSession());
+  const [userPrefs,  setUserPrefs]  = useState(() => getUserPrefs());
+  const [search,     setSearch]     = useState('');
+  const [acOpen,     setAcOpen]     = useState(false);
+  const [acIdx,      setAcIdx]      = useState(-1);
 
-  const suggestions = getSuggestions(search);
+  // modal state mirrors what's currently applied (for pre-populating on re-open)
+  const [modalValues, setModalValues] = useState(() => urlToModal());
+
+  const searchWrapRef = useRef(null);
+  const suggestions   = getSuggestions(search);
+
+  // On mount: apply any filters encoded in the URL
+  useEffect(() => {
+    const m = urlToModal();
+    const pt = PROP_TYPES.find(p => p.id === m.propType) || PROP_TYPES[0];
+    applyWith({
+      transactionType: pt.tx,
+      propertyType:    pt.pt,
+      minPrice:        m.minPrice,
+      maxPrice:        m.maxPrice,
+      minBeds:         m.beds,
+      minBaths:        m.baths,
+      minParking:      m.parking,
+      structures:      m.structures.join(','),
+    });
+    setModalValues(m);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commitSuggestion = useCallback(s => {
-    setSearch(s.label);
-    setAcOpen(false);
-    setAcIdx(-1);
-    if (s.type === 'city') {
-      applyWith({ city: s.label, search: '' });
-    } else {
-      applyWith({ search: s.label, city: '' });
-    }
+    setSearch(s.label); setAcOpen(false); setAcIdx(-1);
+    if (s.type === 'city') applyWith({ city: s.label, search: '' });
+    else                   applyWith({ search: s.label, city: '' });
   }, [applyWith]);
 
-  const handleSearch = e => {
-    e.preventDefault();
-    setAcOpen(false);
-    applyWith({ search, city: '' });
-  };
+  const handleSearch = e => { e.preventDefault(); setAcOpen(false); applyWith({ search, city: '' }); };
 
   const handleSearchKey = e => {
-    if (!acOpen || suggestions.length === 0) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setAcIdx(i => Math.min(i + 1, suggestions.length - 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setAcIdx(i => Math.max(i - 1, -1)); }
+    if (!acOpen || !suggestions.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAcIdx(i => Math.min(i+1, suggestions.length-1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setAcIdx(i => Math.max(i-1, -1)); }
     else if (e.key === 'Enter' && acIdx >= 0) { e.preventDefault(); commitSuggestion(suggestions[acIdx]); }
     else if (e.key === 'Escape') { setAcOpen(false); setAcIdx(-1); }
   };
 
-  // Close dropdown on outside click
   useEffect(() => {
-    const handler = e => { if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setAcOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const h = e => { if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setAcOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, []);
-  const handleVOWSuccess = () => {
-    setHasVOW(true); setUserPrefs(getUserPrefs()); setVowOpen(false);
-  };
-  const isLease = filters.transactionType === 'For Lease';
-  const isCommercial = activeTab === 'com-sale' || activeTab === 'com-rent';
 
-  const TABS = [
-    { id:'res-sale',  label:'Residential Sale',   tx:'For Sale',  pt:'Residential' },
-    { id:'res-rent',  label:'Residential Rental', tx:'For Lease', pt:'Residential' },
-    { id:'com-sale',  label:'Commercial Sale',    tx:'For Sale',  pt:'Commercial'  },
-    { id:'com-rent',  label:'Commercial Rental',  tx:'For Lease', pt:'Commercial'  },
-  ];
+  const handleVOWSuccess = () => { setHasVOW(true); setUserPrefs(getUserPrefs()); setVowOpen(false); };
 
-  const handleTab = tab => {
-    setActiveTab(tab.id);
-    applyWith({ transactionType: tab.tx, propertyType: tab.pt, minBeds: '', minBaths: '', propertySubType: '' });
-  };
+  // ── Apply filters from modal ────────────────────────────────────────────────
+  const handleApplyFilters = useCallback(m => {
+    const pt = PROP_TYPES.find(p => p.id === m.propType) || PROP_TYPES[0];
+    applyWith({
+      transactionType: pt.tx,
+      propertyType:    pt.pt,
+      minPrice:        m.minPrice,
+      maxPrice:        m.maxPrice,
+      minBeds:         m.beds,
+      minBaths:        m.baths,
+      minParking:      m.parking,
+      structures:      m.structures.join(','),
+      propertySubType: '',   // structures supersedes legacy propertySubType
+    });
+    setModalValues(m);
+    // sync URL for shareable links
+    const qs = modalToURL(m);
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [applyWith]);
+
+  const handleReset = useCallback(() => {
+    resetFilters();
+    setModalValues(DEFAULT_MODAL);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [resetFilters]);
+
+  const isLease   = filters.transactionType === 'For Lease';
+  const activeCount = countActive(modalValues);
 
   return (
     <>
@@ -205,13 +250,22 @@ export default function ListingsPage() {
           )}
         </div>
 
+        {/* Filters button */}
         <button
-          className={`mp-nav__filters${filtersOpen ? ' active' : ''}`}
-          onClick={() => setFiltersOpen(o => !o)}
-          aria-expanded={filtersOpen}
-          aria-controls="filter-panel">
-          <i className="ti ti-adjustments-horizontal" style={{ fontSize:13 }} aria-hidden="true"/>
-          Filters{filterSummary(filters)}
+          onClick={() => setModalOpen(true)}
+          aria-haspopup="dialog"
+          style={{
+            display:'flex', alignItems:'center', gap:6,
+            height:36, padding:'0 14px', borderRadius:8,
+            border:`1.5px solid ${activeCount > 0 ? '#00B4A8' : 'rgba(255,255,255,.18)'}`,
+            background: activeCount > 0 ? 'rgba(0,180,168,.15)' : 'rgba(255,255,255,.05)',
+            color: activeCount > 0 ? '#00B4A8' : 'rgba(255,255,255,.7)',
+            fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+            whiteSpace:'nowrap', flexShrink:0,
+          }}
+        >
+          <i className="ti ti-adjustments-horizontal" style={{ fontSize:14 }} aria-hidden="true"/>
+          Filters{activeCount > 0 ? ` (${activeCount})` : ''}
         </button>
 
         <div className="mp-nav__right">
@@ -221,33 +275,6 @@ export default function ListingsPage() {
           }
         </div>
       </header>
-
-      {/* ── Filter panel ─────────────────────────────────────────────── */}
-      {filtersOpen && (
-        <div id="filter-panel">
-          <Filters filters={filters} setFilters={setFilters} isCommercial={isCommercial} applyFilters={() => { applyFilters(); setFiltersOpen(false); }} resetFilters={() => { resetFilters(); setFiltersOpen(false); }}/>
-        </div>
-      )}
-
-      {/* ── Property type tabs ───────────────────────────────────────── */}
-      <div style={{ background:'#0C0D10', borderBottom:'1px solid rgba(255,255,255,.06)', padding:'0 16px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', gap:6, padding:'10px 0', overflowX:'auto' }}>
-          {TABS.map(tab => {
-            const active = activeTab === tab.id;
-            return (
-              <button key={tab.id} onClick={() => handleTab(tab)} style={{
-                height:34, padding:'0 16px', borderRadius:20, border:`1.5px solid ${active ? '#00B4A8' : 'rgba(255,255,255,.12)'}`,
-                background: active ? 'rgba(0,180,168,.12)' : '#161719',
-                color: active ? '#00B4A8' : 'rgba(255,255,255,.5)',
-                fontSize:12, fontWeight: active ? 600 : 400, cursor:'pointer',
-                fontFamily:'inherit', whiteSpace:'nowrap', transition:'all .15s',
-              }}>
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* ── Main ─────────────────────────────────────────────────────── */}
       <div className="listings-page">
@@ -275,7 +302,7 @@ export default function ListingsPage() {
             <div className="listings-empty" role="alert">
               <i className="listings-empty__icon ti ti-alert-triangle" aria-hidden="true"/>
               <h2>Something went wrong</h2><p>{error}</p>
-              <button className="reset-btn" onClick={resetFilters}>Reset &amp; try again</button>
+              <button className="reset-btn" onClick={handleReset}>Reset &amp; try again</button>
             </div>
           ) : (
             <div className={`listings-grid${viewMode==='list' ? ' listings-grid--list' : ''}`} aria-busy={loading} aria-live="polite">
@@ -287,7 +314,7 @@ export default function ListingsPage() {
                     <i className="listings-empty__icon ti ti-search" aria-hidden="true"/>
                     <h2>No listings found</h2>
                     <p>Try widening your search or clearing all filters.</p>
-                    <button className="reset-btn" onClick={resetFilters}>Clear all filters</button>
+                    <button className="reset-btn" onClick={handleReset}>Clear all filters</button>
                   </div>
                 )
                 : listings.map(l => (
@@ -313,6 +340,14 @@ export default function ListingsPage() {
 
       {/* VOW wall */}
       {vowOpen && <VOWSignupWall trigger="general" onSuccess={handleVOWSuccess} onDismiss={() => setVowOpen(false)}/>}
+
+      {/* Filter modal */}
+      <FilterModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onApply={handleApplyFilters}
+        initialValues={modalValues}
+      />
     </>
   );
 }

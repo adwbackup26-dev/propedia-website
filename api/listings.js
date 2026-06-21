@@ -24,6 +24,7 @@ export default async function handler(req, res) {
     structures      = '',
     propertySubType = '',
     city            = '',
+    postalCode      = '',
     search          = '',
     sortBy          = 'ModificationTimestamp',
     sortDir         = 'desc',
@@ -53,6 +54,7 @@ export default async function handler(req, res) {
   if (minBaths)   filters.push(`BathroomsTotalInteger ge ${parseInt(minBaths)}`);
   if (minParking) filters.push(`ParkingSpaces ge ${parseInt(minParking)}`);
   if (city)       filters.push(`City eq '${city}'`);
+  if (postalCode) filters.push(`startswith(PostalCode,'${postalCode.replace(/\s/g, '').toUpperCase().slice(0,3)}')`);
   if (search)     filters.push(`contains(StreetName,'${search.replace(/'/g, "''")}')`);
 
   // structures: comma-separated list → PropertySubType OR filter

@@ -16,28 +16,303 @@ const GridIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="c
 const ListIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2.5" rx="1.25"/><rect x="0" y="6.75" width="16" height="2.5" rx="1.25"/><rect x="0" y="12.5" width="16" height="2.5" rx="1.25"/></svg>;
 
 // ── Autocomplete data ─────────────────────────────────────────────────────────
-const AC_CITIES = [
-  'Toronto','Mississauga','Brampton','Oakville','Burlington','Vaughan','Markham',
-  'Richmond Hill','Ajax','Pickering','Milton','Whitby','Oshawa','Halton Hills',
-  'Caledon','Aurora','Newmarket','King','Georgina','Innisfil','Barrie',
-  'Collingwood','Guelph','Hamilton','Kitchener','Waterloo','Cambridge',
-];
-const AC_HOODS = [
-  'Etobicoke','Scarborough','North York','East York','York','Downtown Toronto',
-  'Midtown Toronto','The Beaches','Leslieville','Riverdale','Roncesvalles',
-  'Junction','Bloor West Village','Lawrence Park','Forest Hill','Rosedale',
-  'Moore Park','Leaside','Don Mills','Agincourt','Malvern','Rouge','Woburn',
-  'Port Credit','Streetsville','Meadowvale','Erin Mills','Cooksville',
-  'Clarkson','Lakeview','Applewood','Malton',
-];
+// Entry shape: { label, display, type, city?, searchCity?, searchTerm? }
+//   label       — what fills the search box on select
+//   display     — right-column context tag shown in dropdown
+//   type        — 'region' | 'city' | 'hood' | 'road' | 'intersection' | 'landmark'
+//   city        — parent city (used for hood/road/landmark API calls)
+//   searchCity  — city param sent to API (may differ from display city)
+//   searchTerm  — overrides label for the API `search` param
+
+function ac(label, display, type, city, searchTerm) {
+  return { label, display, type, city: city || '', searchTerm: searchTerm || label };
+}
+
 const AC_ALL = [
-  ...AC_CITIES.map(v => ({ label: v, type: 'city' })),
-  ...AC_HOODS.map(v => ({ label: v, type: 'hood' })),
+  // ── Regions ──────────────────────────────────────────────────────────────
+  ac('Toronto',        'Region',      'region'),
+  ac('Peel Region',    'Region',      'region'),
+  ac('York Region',    'Region',      'region'),
+  ac('Durham Region',  'Region',      'region'),
+  ac('Halton Region',  'Region',      'region'),
+  ac('Simcoe County',  'Region',      'region'),
+
+  // ── Cities ───────────────────────────────────────────────────────────────
+  ac('Toronto',        'City',        'city'),
+  ac('Mississauga',    'City',        'city'),
+  ac('Brampton',       'City',        'city'),
+  ac('Oakville',       'City',        'city'),
+  ac('Burlington',     'City',        'city'),
+  ac('Vaughan',        'City',        'city'),
+  ac('Markham',        'City',        'city'),
+  ac('Richmond Hill',  'City',        'city'),
+  ac('Ajax',           'City',        'city'),
+  ac('Pickering',      'City',        'city'),
+  ac('Milton',         'City',        'city'),
+  ac('Whitby',         'City',        'city'),
+  ac('Oshawa',         'City',        'city'),
+  ac('Halton Hills',   'City',        'city'),
+  ac('Caledon',        'City',        'city'),
+  ac('Aurora',         'City',        'city'),
+  ac('Newmarket',      'City',        'city'),
+  ac('King',           'City',        'city'),
+  ac('Georgina',       'City',        'city'),
+  ac('Innisfil',       'City',        'city'),
+  ac('Barrie',         'City',        'city'),
+  ac('Collingwood',    'City',        'city'),
+  ac('Guelph',         'City',        'city'),
+  ac('Hamilton',       'City',        'city'),
+  ac('Kitchener',      'City',        'city'),
+  ac('Waterloo',       'City',        'city'),
+  ac('Cambridge',      'City',        'city'),
+
+  // ── Toronto neighbourhoods ────────────────────────────────────────────────
+  ac('Etobicoke',            'Toronto',    'hood', 'Toronto'),
+  ac('Scarborough',          'Toronto',    'hood', 'Toronto'),
+  ac('North York',           'Toronto',    'hood', 'Toronto'),
+  ac('East York',            'Toronto',    'hood', 'Toronto'),
+  ac('Downtown Toronto',     'Toronto',    'hood', 'Toronto', 'Downtown'),
+  ac('Midtown Toronto',      'Toronto',    'hood', 'Toronto', 'Midtown'),
+  ac('The Beaches',          'Toronto',    'hood', 'Toronto', 'Beaches'),
+  ac('Leslieville',          'Toronto',    'hood', 'Toronto'),
+  ac('Riverdale',            'Toronto',    'hood', 'Toronto'),
+  ac('Roncesvalles',         'Toronto',    'hood', 'Toronto'),
+  ac('Junction',             'Toronto',    'hood', 'Toronto'),
+  ac('Bloor West Village',   'Toronto',    'hood', 'Toronto', 'Bloor West'),
+  ac('Lawrence Park',        'Toronto',    'hood', 'Toronto', 'Lawrence'),
+  ac('Forest Hill',          'Toronto',    'hood', 'Toronto'),
+  ac('Rosedale',             'Toronto',    'hood', 'Toronto'),
+  ac('Moore Park',           'Toronto',    'hood', 'Toronto'),
+  ac('Leaside',              'Toronto',    'hood', 'Toronto'),
+  ac('Don Mills',            'Toronto',    'hood', 'Toronto'),
+  ac('Agincourt',            'Toronto',    'hood', 'Toronto'),
+  ac('Malvern',              'Toronto',    'hood', 'Toronto'),
+  ac('Liberty Village',      'Toronto',    'hood', 'Toronto'),
+  ac('King West',            'Toronto',    'hood', 'Toronto', 'King'),
+  ac('Queen West',           'Toronto',    'hood', 'Toronto', 'Queen'),
+  ac('Chinatown',            'Toronto',    'hood', 'Toronto'),
+  ac('Kensington Market',    'Toronto',    'hood', 'Toronto', 'Kensington'),
+  ac('Parkdale',             'Toronto',    'hood', 'Toronto'),
+  ac('Little Italy',         'Toronto',    'hood', 'Toronto'),
+  ac('Ossington',            'Toronto',    'hood', 'Toronto'),
+  ac('Yorkville',            'Toronto',    'hood', 'Toronto'),
+  ac('St. Lawrence',         'Toronto',    'hood', 'Toronto', 'Lawrence'),
+  ac('Distillery District',  'Toronto',    'hood', 'Toronto', 'Distillery'),
+  ac('Cabbagetown',          'Toronto',    'hood', 'Toronto'),
+  ac('Corso Italia',         'Toronto',    'hood', 'Toronto'),
+  ac('Greektown',            'Toronto',    'hood', 'Toronto'),
+  ac('Koreatown',            'Toronto',    'hood', 'Toronto'),
+  ac('The Annex',            'Toronto',    'hood', 'Toronto', 'Annex'),
+  ac('Regent Park',          'Toronto',    'hood', 'Toronto'),
+  ac('Fort York',            'Toronto',    'hood', 'Toronto'),
+
+  // ── Mississauga neighbourhoods ────────────────────────────────────────────
+  ac('Port Credit',          'Mississauga', 'hood', 'Mississauga'),
+  ac('Streetsville',         'Mississauga', 'hood', 'Mississauga'),
+  ac('Meadowvale',           'Mississauga', 'hood', 'Mississauga'),
+  ac('Erin Mills',           'Mississauga', 'hood', 'Mississauga'),
+  ac('Cooksville',           'Mississauga', 'hood', 'Mississauga'),
+  ac('Clarkson',             'Mississauga', 'hood', 'Mississauga'),
+  ac('Lakeview',             'Mississauga', 'hood', 'Mississauga'),
+  ac('Applewood',            'Mississauga', 'hood', 'Mississauga'),
+  ac('Malton',               'Mississauga', 'hood', 'Mississauga'),
+  ac('Britannia',            'Mississauga', 'hood', 'Mississauga'),
+  ac('Erindale',             'Mississauga', 'hood', 'Mississauga'),
+  ac('Hurontario',           'Mississauga', 'hood', 'Mississauga'),
+  ac('Lisgar',               'Mississauga', 'hood', 'Mississauga'),
+  ac('Lorne Park',           'Mississauga', 'hood', 'Mississauga'),
+  ac('Mineola',              'Mississauga', 'hood', 'Mississauga'),
+  ac('Credit Valley',        'Mississauga', 'hood', 'Mississauga'),
+  ac('Creditview',           'Mississauga', 'hood', 'Mississauga'),
+  ac('Central Mississauga',  'Mississauga', 'hood', 'Mississauga', 'Central'),
+
+  // ── Brampton neighbourhoods ───────────────────────────────────────────────
+  ac('Bramalea',             'Brampton',   'hood', 'Brampton'),
+  ac('Sandringham',          'Brampton',   'hood', 'Brampton'),
+  ac('Mount Pleasant',       'Brampton',   'hood', 'Brampton'),
+  ac('Springdale',           'Brampton',   'hood', 'Brampton'),
+  ac('Downtown Brampton',    'Brampton',   'hood', 'Brampton', 'Downtown'),
+  ac('Snelgrove',            'Brampton',   'hood', 'Brampton'),
+  ac('Castlemore',           'Brampton',   'hood', 'Brampton'),
+  ac('East Brampton',        'Brampton',   'hood', 'Brampton'),
+
+  // ── Markham neighbourhoods ────────────────────────────────────────────────
+  ac('Downtown Markham',     'Markham',    'hood', 'Markham', 'Downtown'),
+  ac('Unionville',           'Markham',    'hood', 'Markham'),
+  ac('Cornell',              'Markham',    'hood', 'Markham'),
+  ac('Berczy',               'Markham',    'hood', 'Markham'),
+  ac('Angus Glen',           'Markham',    'hood', 'Markham'),
+  ac('Milliken Mills',       'Markham',    'hood', 'Markham'),
+  ac('Buttonville',          'Markham',    'hood', 'Markham'),
+  ac('Thornhill',            'Markham',    'hood', 'Markham'),
+
+  // ── Oakville neighbourhoods ───────────────────────────────────────────────
+  ac('Downtown Oakville',    'Oakville',   'hood', 'Oakville', 'Downtown'),
+  ac('Bronte',               'Oakville',   'hood', 'Oakville'),
+  ac('Glen Abbey',           'Oakville',   'hood', 'Oakville'),
+  ac('Palermo',              'Oakville',   'hood', 'Oakville'),
+  ac('White Oaks',           'Oakville',   'hood', 'Oakville'),
+  ac('East Oakville',        'Oakville',   'hood', 'Oakville'),
+  ac('Midtown Oakville',     'Oakville',   'hood', 'Oakville'),
+
+  // ── Richmond Hill & Vaughan neighbourhoods ────────────────────────────────
+  ac('Jefferson',            'Richmond Hill', 'hood', 'Richmond Hill'),
+  ac('Langstaff',            'Richmond Hill', 'hood', 'Richmond Hill'),
+  ac('Woodbridge',           'Vaughan',    'hood', 'Vaughan'),
+  ac('Concord',              'Vaughan',    'hood', 'Vaughan'),
+  ac('Kleinburg',            'Vaughan',    'hood', 'Vaughan'),
+  ac('Maple',                'Vaughan',    'hood', 'Vaughan'),
+
+  // ── Ajax, Whitby, Oshawa ──────────────────────────────────────────────────
+  ac('Downtown Ajax',        'Ajax',       'hood', 'Ajax', 'Downtown'),
+  ac('Westney',              'Ajax',       'hood', 'Ajax'),
+  ac('Brooklin',             'Whitby',     'hood', 'Whitby'),
+  ac('Downtown Whitby',      'Whitby',     'hood', 'Whitby', 'Downtown'),
+  ac('Downtown Oshawa',      'Oshawa',     'hood', 'Oshawa', 'Downtown'),
+  ac('Port Oshawa',          'Oshawa',     'hood', 'Oshawa'),
+
+  // ── Major roads & streets ─────────────────────────────────────────────────
+  ac('Yonge Street',         'Road',       'road', 'Toronto',     'Yonge'),
+  ac('Bloor Street',         'Road',       'road', 'Toronto',     'Bloor'),
+  ac('King Street',          'Road',       'road', 'Toronto',     'King'),
+  ac('Queen Street',         'Road',       'road', 'Toronto',     'Queen'),
+  ac('Dundas Street',        'Road',       'road', 'Toronto',     'Dundas'),
+  ac('College Street',       'Road',       'road', 'Toronto',     'College'),
+  ac('Eglinton Avenue',      'Road',       'road', 'Toronto',     'Eglinton'),
+  ac('Lawrence Avenue',      'Road',       'road', 'Toronto',     'Lawrence'),
+  ac('Steeles Avenue',       'Road',       'road', '',            'Steeles'),
+  ac('Finch Avenue',         'Road',       'road', 'Toronto',     'Finch'),
+  ac('Sheppard Avenue',      'Road',       'road', 'Toronto',     'Sheppard'),
+  ac('Bathurst Street',      'Road',       'road', 'Toronto',     'Bathurst'),
+  ac('University Avenue',    'Road',       'road', 'Toronto',     'University'),
+  ac('Spadina Avenue',       'Road',       'road', 'Toronto',     'Spadina'),
+  ac('Avenue Road',          'Road',       'road', 'Toronto',     'Avenue'),
+  ac('Bay Street',           'Road',       'road', 'Toronto',     'Bay'),
+  ac('Bayview Avenue',       'Road',       'road', 'Toronto',     'Bayview'),
+  ac('Don Mills Road',       'Road',       'road', 'Toronto',     'Don Mills'),
+  ac('Islington Avenue',     'Road',       'road', 'Toronto',     'Islington'),
+  ac('Kipling Avenue',       'Road',       'road', 'Toronto',     'Kipling'),
+  ac('Victoria Park',        'Road',       'road', 'Toronto',     'Victoria Park'),
+  ac('Woodbine Avenue',      'Road',       'road', 'Toronto',     'Woodbine'),
+  ac('Warden Avenue',        'Road',       'road', 'Toronto',     'Warden'),
+  ac('Kennedy Road',         'Road',       'road', 'Toronto',     'Kennedy'),
+  ac('McCowan Road',         'Road',       'road', 'Toronto',     'McCowan'),
+  ac('Morningside Avenue',   'Road',       'road', 'Toronto',     'Morningside'),
+  ac('Markham Road',         'Road',       'road', 'Toronto',     'Markham Road'),
+  ac('Ellesmere Road',       'Road',       'road', 'Toronto',     'Ellesmere'),
+  ac('Burnhamthorpe Road',   'Road',       'road', 'Mississauga', 'Burnhamthorpe'),
+  ac('Hurontario Street',    'Road',       'road', 'Mississauga', 'Hurontario'),
+  ac('Mississauga Road',     'Road',       'road', 'Mississauga', 'Mississauga Road'),
+  ac('Erin Mills Parkway',   'Road',       'road', 'Mississauga', 'Erin Mills'),
+  ac('Mavis Road',           'Road',       'road', 'Mississauga', 'Mavis'),
+  ac('Credit Valley Road',   'Road',       'road', 'Mississauga', 'Credit Valley'),
+  ac('Highway 401',          'Road',       'road', '',            'Highway 401'),
+  ac('Highway 407',          'Road',       'road', '',            'Highway 407'),
+  ac('Queen Elizabeth Way',  'Road (QEW)', 'road', '',            'Queen Elizabeth'),
+  ac('Don Valley Parkway',   'Road',       'road', 'Toronto',     'Don Valley'),
+  ac('Gardiner Expressway',  'Road',       'road', 'Toronto',     'Gardiner'),
+
+  // ── Major intersections ───────────────────────────────────────────────────
+  ac('Yonge & Dundas',       'Intersection', 'intersection', 'Toronto', 'Yonge'),
+  ac('Yonge & Bloor',        'Intersection', 'intersection', 'Toronto', 'Yonge'),
+  ac('Yonge & College',      'Intersection', 'intersection', 'Toronto', 'Yonge'),
+  ac('Yonge & Eglinton',     'Intersection', 'intersection', 'Toronto', 'Eglinton'),
+  ac('Yonge & Sheppard',     'Intersection', 'intersection', 'Toronto', 'Sheppard'),
+  ac('Yonge & Finch',        'Intersection', 'intersection', 'Toronto', 'Finch'),
+  ac('Yonge & Lawrence',     'Intersection', 'intersection', 'Toronto', 'Lawrence'),
+  ac('Yonge & Steeles',      'Intersection', 'intersection', 'Toronto', 'Steeles'),
+  ac('Bloor & Spadina',      'Intersection', 'intersection', 'Toronto', 'Bloor'),
+  ac('Bloor & Bathurst',     'Intersection', 'intersection', 'Toronto', 'Bloor'),
+  ac('Bloor & Bay',          'Intersection', 'intersection', 'Toronto', 'Bloor'),
+  ac('Bloor & Kipling',      'Intersection', 'intersection', 'Toronto', 'Bloor'),
+  ac('King & Yonge',         'Intersection', 'intersection', 'Toronto', 'King'),
+  ac('King & Simcoe',        'Intersection', 'intersection', 'Toronto', 'King'),
+  ac('King & University',    'Intersection', 'intersection', 'Toronto', 'King'),
+  ac('Queen & Spadina',      'Intersection', 'intersection', 'Toronto', 'Queen'),
+  ac('Queen & Bay',          'Intersection', 'intersection', 'Toronto', 'Queen'),
+  ac('Queen & Bathurst',     'Intersection', 'intersection', 'Toronto', 'Queen'),
+  ac('Dundas & Bathurst',    'Intersection', 'intersection', 'Toronto', 'Dundas'),
+  ac('Dundas & Spadina',     'Intersection', 'intersection', 'Toronto', 'Dundas'),
+  ac('Dundas & University',  'Intersection', 'intersection', 'Toronto', 'Dundas'),
+  ac('Dundas & Kipling',     'Intersection', 'intersection', 'Toronto', 'Dundas'),
+  ac('Eglinton & Avenue Road','Intersection','intersection', 'Toronto', 'Eglinton'),
+  ac('Eglinton & Bathurst',  'Intersection', 'intersection', 'Toronto', 'Eglinton'),
+  ac('Sheppard & Don Mills', 'Intersection', 'intersection', 'Toronto', 'Sheppard'),
+  ac('Dundas & Hurontario',  'Intersection', 'intersection', 'Mississauga', 'Dundas'),
+
+  // ── Landmark buildings & developments ────────────────────────────────────
+  ac('Marilyn Monroe Condos',   'Landmark · Mississauga', 'landmark', 'Mississauga', 'Absolute'),
+  ac('Absolute Towers',         'Landmark · Mississauga', 'landmark', 'Mississauga', 'Absolute'),
+  ac('One Absolute World',      'Landmark · Mississauga', 'landmark', 'Mississauga', 'Absolute'),
+  ac('Square One',              'Landmark · Mississauga', 'landmark', 'Mississauga', 'Square One'),
+  ac('m City',                  'Landmark · Mississauga', 'landmark', 'Mississauga', 'm City'),
+  ac('Daniels Erin Mills',      'Landmark · Mississauga', 'landmark', 'Mississauga', 'Daniels'),
+  ac('Port Credit Village',     'Landmark · Mississauga', 'landmark', 'Mississauga', 'Port Credit'),
+  ac('Pinnacle Towers',         'Landmark · Mississauga', 'landmark', 'Mississauga', 'Pinnacle'),
+  ac('Halo Condos',             'Landmark · Mississauga', 'landmark', 'Mississauga', 'Halo'),
+  ac('Mississauga City Centre', 'Landmark · Mississauga', 'landmark', 'Mississauga', 'City Centre'),
+  ac('CN Tower',                'Landmark · Toronto',     'landmark', 'Toronto',     'CN Tower'),
+  ac('Distillery District',     'Landmark · Toronto',     'landmark', 'Toronto',     'Distillery'),
+  ac('Entertainment District',  'Landmark · Toronto',     'landmark', 'Toronto',     'Entertainment'),
+  ac('Kensington Market',       'Landmark · Toronto',     'landmark', 'Toronto',     'Kensington'),
+  ac('Eaton Centre',            'Landmark · Toronto',     'landmark', 'Toronto',     'Eaton'),
+  ac('Regent Park',             'Landmark · Toronto',     'landmark', 'Toronto',     'Regent Park'),
+  ac('Casa Loma',               'Landmark · Toronto',     'landmark', 'Toronto',     'Casa Loma'),
+  ac('High Park',               'Landmark · Toronto',     'landmark', 'Toronto',     'High Park'),
+  ac('Scarborough Bluffs',      'Landmark · Toronto',     'landmark', 'Toronto',     'Bluffs'),
+  ac('Vaughan Metropolitan Centre','Landmark · Vaughan',  'landmark', 'Vaughan',     'Metropolitan'),
+  ac('Bramalea City Centre',    'Landmark · Brampton',    'landmark', 'Brampton',    'Bramalea'),
+  ac('Markham Centre',          'Landmark · Markham',     'landmark', 'Markham',     'Markham Centre'),
+  ac('Unionville Village',      'Landmark · Markham',     'landmark', 'Markham',     'Unionville'),
 ];
+
+// ── type → icon mapping ───────────────────────────────────────────────────────
+const TYPE_ICON = {
+  region:       'ti-map-2',
+  city:         'ti-building-community',
+  hood:         'ti-map-pin',
+  road:         'ti-road',
+  intersection: 'ti-arrows-cross',
+  landmark:     'ti-star',
+  postal:       'ti-mail',
+};
+
+// ── suggestion engine ─────────────────────────────────────────────────────────
 function getSuggestions(q) {
   if (!q || q.length < 2) return [];
-  const lq = q.toLowerCase();
-  return AC_ALL.filter(s => s.label.toLowerCase().includes(lq)).slice(0, 6);
+  const lq = q.toLowerCase().trim();
+
+  // Detect postal code query (letter + digit pattern, e.g. "L4T", "M5V 2X3")
+  const postalSuggestions = [];
+  if (/^[a-z]\d/i.test(lq) && lq.length <= 7) {
+    const code = lq.replace(/\s/g, '').toUpperCase().slice(0, 6);
+    postalSuggestions.push({
+      label:      code,
+      display:    'Postal code',
+      type:       'postal',
+      city:       '',
+      searchTerm: code,
+    });
+  }
+
+  const matched = AC_ALL.filter(s => {
+    const haystack = s.label.toLowerCase();
+    return haystack.includes(lq);
+  });
+
+  // Exact-start matches first, then contains; stable within each group
+  matched.sort((a, b) => {
+    const al = a.label.toLowerCase();
+    const bl = b.label.toLowerCase();
+    const aStarts = al.startsWith(lq) ? 0 : 1;
+    const bStarts = bl.startsWith(lq) ? 0 : 1;
+    if (aStarts !== bStarts) return aStarts - bStarts;
+    // Within same priority: cities before hoods before others
+    const rank = { city:0, region:1, hood:2, road:3, intersection:4, landmark:5 };
+    return (rank[a.type] ?? 9) - (rank[b.type] ?? 9);
+  });
+
+  return [...postalSuggestions, ...matched].slice(0, 12);
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
@@ -141,8 +416,32 @@ export default function ListingsPage() {
 
   const commitSuggestion = useCallback(s => {
     setSearch(s.label); setAcOpen(false); setAcIdx(-1);
-    if (s.type === 'city') applyWith({ city: s.label, search: '' });
-    else                   applyWith({ search: s.label, city: '' });
+    const term = s.searchTerm || s.label;
+    switch (s.type) {
+      case 'city':
+        applyWith({ city: s.label, search: '', postalCode: '' });
+        break;
+      case 'region':
+        // Regions span many cities — clear city filter, show all GTA
+        applyWith({ city: '', search: '', postalCode: '' });
+        break;
+      case 'hood':
+        applyWith({ search: term, city: s.city || '', postalCode: '' });
+        break;
+      case 'road':
+      case 'landmark':
+        applyWith({ search: term, city: s.city || '', postalCode: '' });
+        break;
+      case 'intersection':
+        // Search by the primary street name
+        applyWith({ search: term, city: s.city || '', postalCode: '' });
+        break;
+      case 'postal':
+        applyWith({ postalCode: term, city: '', search: '' });
+        break;
+      default:
+        applyWith({ search: term, city: '', postalCode: '' });
+    }
   }, [applyWith]);
 
   const handleSearch = e => { e.preventDefault(); setAcOpen(false); applyWith({ search, city: '' }); };
@@ -227,23 +526,24 @@ export default function ListingsPage() {
                 <div style={{ padding:'10px 14px', fontSize:12, color:'rgba(255,255,255,.3)' }}>No suggestions</div>
               ) : suggestions.map((s, i) => (
                 <div
-                  key={s.label}
+                  key={`${s.type}-${s.label}`}
                   onMouseDown={e => { e.preventDefault(); commitSuggestion(s); }}
                   onMouseEnter={() => setAcIdx(i)}
                   style={{
-                    padding:'9px 14px', fontSize:12, cursor:'pointer', display:'flex',
+                    padding:'9px 14px', fontSize:13, cursor:'pointer', display:'flex',
                     alignItems:'center', gap:8,
                     background: i === acIdx ? 'rgba(0,180,168,.12)' : 'transparent',
-                    color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.75)',
+                    color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.8)',
                     borderBottom: i < suggestions.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none',
                   }}
                 >
-                  <i className={`ti ${s.type === 'city' ? 'ti-building-community' : 'ti-map-pin'}`}
-                     style={{ fontSize:11, color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.3)', flexShrink:0 }}/>
-                  <span>{s.label}</span>
-                  <span style={{ marginLeft:'auto', fontSize:10, color:'rgba(255,255,255,.25)' }}>
-                    {s.type === 'city' ? 'City' : 'Neighbourhood'}
+                  <i className={`ti ${TYPE_ICON[s.type] || 'ti-map-pin'}`}
+                     style={{ fontSize:12, color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.3)', flexShrink:0, width:14, textAlign:'center' }}/>
+                  <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {s.label}
+                    {s.city ? <span style={{ color:'rgba(255,255,255,.35)', marginLeft:4, fontSize:11 }}>· {s.city}</span> : null}
                   </span>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,.22)', flexShrink:0 }}>{s.display}</span>
                 </div>
               ))}
             </div>

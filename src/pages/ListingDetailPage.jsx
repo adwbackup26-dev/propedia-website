@@ -4,7 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import AvailableButton from '../components/AvailableButton.jsx';
 import ListingCard from '../components/ListingCard.jsx';
-import { useCompare } from '../hooks/useListings.js';
+import PriceHistorySection from '../components/PriceHistorySection.jsx';
+import VOWSignupWall from '../components/VOWSignupWall.jsx';
+import { useCompare, getVOWSession } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
 import '../styles/listings.css';
 
@@ -506,6 +508,8 @@ export default function ListingDetailPage() {
   const [lightbox,     setLightbox]     = useState(false);
   const [similar,      setSimilar]      = useState([]);
   const [monthlyTotal, setMonthlyTotal] = useState(null);
+  const [hasVOW,       setHasVOW]       = useState(() => getVOWSession());
+  const [vowOpen,      setVowOpen]      = useState(false);
 
   useEffect(() => {
     if (!listingKey) return;
@@ -718,6 +722,13 @@ export default function ListingDetailPage() {
           </div>
         </div>
 
+        {/* Price History */}
+        <PriceHistorySection
+          listing={listing}
+          isVOWMember={hasVOW}
+          onSignupClick={() => setVowOpen(true)}
+        />
+
         {/* Similar Properties */}
         {similar.length > 0 && (
           <div style={{ marginTop:24 }}>
@@ -743,6 +754,15 @@ export default function ListingDetailPage() {
 
       {/* Lightbox */}
       {lightbox && <Lightbox photos={photos} startIdx={photoIdx} onClose={()=>setLightbox(false)}/>}
+
+      {/* VOW modal (triggered from Price History section) */}
+      {vowOpen && (
+        <VOWSignupWall
+          trigger="price-history"
+          onSuccess={() => { setHasVOW(true); setVowOpen(false); }}
+          onDismiss={() => setVowOpen(false)}
+        />
+      )}
     </div>
   );
 }

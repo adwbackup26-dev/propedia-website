@@ -86,7 +86,10 @@ export default function MapPage() {
       const bounds = new mapboxgl.LngLatBounds();
       listings.forEach(l => bounds.extend([l.Longitude, l.Latitude]));
       map.current.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 600 });
+      const canvas = map.current.getCanvas();
       console.log('[MapPage] fitBounds SW:', bounds.getSouthWest(), 'NE:', bounds.getNorthEast());
+      console.log('[MapPage] canvas size:', canvas.offsetWidth, 'x', canvas.offsetHeight, 'display:', canvas.style.display || 'unset');
+      console.log('[MapPage] container size:', mapContainer.current?.offsetWidth, 'x', mapContainer.current?.offsetHeight);
     }
 
     listings.forEach(listing => {
@@ -215,8 +218,10 @@ export default function MapPage() {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style:     'mapbox://styles/mapbox/dark-v11',
-        bounds:    [[-79.64, 43.55], [-78.90, 44.10]],
-        fitBoundsOptions: { padding: 20 },
+        center:    [-79.4, 43.7],
+        zoom:      10,
+        pitch:     0,
+        bearing:   0,
       });
       console.log('[MapPage] Map instance created');
 
@@ -276,6 +281,8 @@ export default function MapPage() {
   return (
     <div style={{ position:'relative', width:'100%', height:'100vh', fontFamily:'DM Sans,system-ui,sans-serif' }}>
       <style>{`
+        .mapboxgl-canvas { display: block !important; }
+        .mapboxgl-marker { cursor: pointer; }
         .propedia-popup .mapboxgl-popup-content {
           background: transparent; padding: 0; box-shadow: none; border-radius: 0;
         }
@@ -288,7 +295,7 @@ export default function MapPage() {
       `}</style>
 
       {/* ── Map container ── */}
-      <div ref={mapContainer} style={{ width:'100%', height:'100%' }}/>
+      <div id="map-canvas" ref={mapContainer} style={{ width:'100%', height:'100%', position:'relative' }}/>
 
       {/* ── Top nav bar ── */}
       <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:200, height:46, background:'rgba(12,13,16,.92)', backdropFilter:'blur(8px)', borderBottom:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', padding:'0 14px', gap:10 }}>

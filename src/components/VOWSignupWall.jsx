@@ -14,7 +14,7 @@ const GTA_AREAS = [
 const inp = {
   width: '100%', height: 42, background: 'rgba(255,255,255,.06)',
   border: '1px solid rgba(255,255,255,.14)', borderRadius: 7,
-  padding: '0 13px', fontSize: 14, color: '#fff', outline: 'none',
+  padding: '0 13px', fontSize: 16, color: '#fff', outline: 'none',
   fontFamily: 'inherit', boxSizing: 'border-box',
 };
 const lbl = {

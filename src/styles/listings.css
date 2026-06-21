@@ -141,9 +141,11 @@
   .mp-nav__search { max-width: none; }
   .mp-nav__vow { display: none; }
 
-  /* Filter panel: allow wrapping */
-  .filter-panel { padding: 10px 14px; gap: 7px; }
+  /* Filter panel: allow wrapping, prevent horizontal overflow */
+  .filter-panel { padding: 10px 14px; gap: 7px; overflow-x: auto; }
   .fp-input { width: 80px; }
+  /* Prevent filter panel from overflowing viewport width */
+  .filter-panel { flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
 
   /* 1 card per row on mobile */
   .listings-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -154,12 +156,24 @@
 
   /* Compare bar: compress */
   .compare-bar { padding: 10px 14px; gap: 8px; }
+
+  /* View-toggle map button: hide text, icon only */
+  .view-btn { min-height: 44px; min-width: 44px; }
+
+  /* Prevent horizontal scroll from property type tabs */
+  .listings-page { overflow-x: hidden; }
 }
 
 @media (max-width: 480px) {
   /* Smallest phones: even tighter */
   .mp-nav__signup { font-size: 11px; padding: 0 12px; }
   .filter-panel { row-gap: 6px; }
+
+  /* VOW modal: comfortable on small phones */
+  .vow-modal { padding: 24px 20px; max-width: calc(100vw - 32px); border-radius: 10px; }
+
+  /* Pagination: smaller buttons */
+  .pagination__btn { width: 30px; height: 44px; font-size: 12px; }
 }
 
 /* ── Detail page — mobile ────────────────────────────────────────────────── */

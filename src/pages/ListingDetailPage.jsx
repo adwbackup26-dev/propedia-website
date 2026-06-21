@@ -566,6 +566,14 @@ export default function ListingDetailPage() {
           .mobile-cta   { display:flex !important; }
           .similar-grid { grid-template-columns:repeat(2,1fr) !important; }
         }
+        @media(max-width:480px){
+          /* Prevent iOS auto-zoom on number input focus (must be >= 16px) */
+          input[type="number"] { font-size: 16px !important; }
+          /* Similar properties: 1 col on smallest phones */
+          .similar-grid { grid-template-columns:1fr !important; }
+          /* "View all photos" button — touch-friendly height */
+          .view-all-photos-btn { min-height:44px !important; padding:0 16px !important; }
+        }
       `}</style>
 
       {/* Nav */}
@@ -604,7 +612,7 @@ export default function ListingDetailPage() {
               <span style={{ fontSize:10, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'4px 11px', borderRadius:5, background:isLease?'rgba(59,130,246,.85)':'rgba(16,185,129,.85)', color:'#fff' }}>{listing.TransactionType}</span>
               {listing.OriginalListPrice&&listing.OriginalListPrice>listing.ListPrice&&<span style={{ fontSize:10, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'rgba(239,68,68,.8)', color:'#fff' }}>Price Reduced {fmt(listing.OriginalListPrice-listing.ListPrice)}</span>}
             </div>
-            <button onClick={()=>setLightbox(true)} style={{ position:'absolute', bottom:72, right:14, height:30, padding:'0 12px', background:'rgba(0,0,0,.6)', border:'1px solid rgba(255,255,255,.18)', borderRadius:7, color:'rgba(255,255,255,.8)', fontSize:11, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
+            <button onClick={()=>setLightbox(true)} className="view-all-photos-btn" style={{ position:'absolute', bottom:72, right:14, height:30, padding:'0 12px', background:'rgba(0,0,0,.6)', border:'1px solid rgba(255,255,255,.18)', borderRadius:7, color:'rgba(255,255,255,.8)', fontSize:11, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
               <i className="ti ti-camera" style={{ fontSize:11 }}/>View all {photoCount} photos
             </button>
             <div style={{ position:'absolute', bottom:10, left:'50%', transform:'translateX(-50%)', display:'flex', gap:6 }}>

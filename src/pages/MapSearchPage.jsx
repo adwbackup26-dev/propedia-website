@@ -34,7 +34,7 @@ function ResultCard({ listing, onClick }) {
     fetch(`/api/photos?listingKey=${listing.ListingKey}&limit=1`)
       .then(r => r.json())
       .then(data => {
-        const url = data.photos?.[0]?.MediaURL || data.value?.[0]?.MediaURL;
+        const url = data.photos?.[0]?.url;
         if (url) { setPhotoUrl(url); setPhotoState('loaded'); }
         else setPhotoState('none');
       })

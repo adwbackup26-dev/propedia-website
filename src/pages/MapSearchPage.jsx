@@ -24,6 +24,54 @@ function fmt(n) {
   return '$' + Math.round(n).toLocaleString('en-CA');
 }
 
+// ── Result card with lazy photo load ─────────────────────────────────────────
+function ResultCard({ listing, onClick }) {
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [photoState, setPhotoState] = useState('loading'); // 'loading' | 'loaded' | 'none'
+
+  useEffect(() => {
+    if (!listing.ListingKey) { setPhotoState('none'); return; }
+    fetch(`/api/photos?listingKey=${listing.ListingKey}&limit=1`)
+      .then(r => r.json())
+      .then(data => {
+        const url = data.photos?.[0]?.MediaURL || data.value?.[0]?.MediaURL;
+        if (url) { setPhotoUrl(url); setPhotoState('loaded'); }
+        else setPhotoState('none');
+      })
+      .catch(() => setPhotoState('none'));
+  }, [listing.ListingKey]);
+
+  const addr = [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ');
+
+  return (
+    <div
+      onClick={onClick}
+      style={{ minWidth:148, maxWidth:148, background:'#0C0D10', border:'1px solid rgba(255,255,255,.07)', borderRadius:8, overflow:'hidden', cursor:'pointer', flexShrink:0, transition:'border-color .12s' }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,180,168,.4)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)'}
+    >
+      <div style={{ height:76, background:'rgba(0,180,168,.04)', overflow:'hidden', position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        {photoState === 'loaded' && (
+          <img src={photoUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
+        )}
+        {photoState === 'loading' && (
+          <span style={{ fontSize:10, color:'rgba(255,255,255,.18)' }}>Loading…</span>
+        )}
+        {photoState === 'none' && (
+          <span style={{ fontSize:22, color:'rgba(255,255,255,.1)' }}>⌂</span>
+        )}
+      </div>
+      <div style={{ padding:'8px 9px 10px' }}>
+        <div style={{ fontSize:12, fontWeight:700, color:'#fff', marginBottom:2 }}>{fmt(listing.ListPrice)}</div>
+        <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>{addr || listing.City}</div>
+        <div style={{ fontSize:10, color:'rgba(255,255,255,.25)' }}>
+          {[listing.BedroomsTotal && `${listing.BedroomsTotal} bd`, listing.BathroomsTotalInteger && `${listing.BathroomsTotalInteger} ba`].filter(Boolean).join(' · ')}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Module-level geocode cache (survives React re-renders) ────────────────────
 const geocodeCache = new Map();
 
@@ -423,27 +471,13 @@ export default function MapSearchPage() {
           {/* Cards */}
           {resultCount > 0 && (
             <div style={{ display:'flex', gap:8, overflowX:'auto', padding:'2px 14px 12px', WebkitOverflowScrolling:'touch', maxHeight:210 }}>
-              {filtered.map(l => {
-                const addr = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ');
-                return (
-                  <div
-                    key={l.ListingKey}
-                    onClick={() => navigate(`/listing/${l.ListingKey}`)}
-                    style={{ minWidth:148, maxWidth:148, background:'#0C0D10', border:'1px solid rgba(255,255,255,.07)', borderRadius:8, overflow:'hidden', cursor:'pointer', flexShrink:0, transition:'border-color .12s' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,180,168,.4)'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)'}
-                  >
-                    <div style={{ height:76, background:'rgba(0,180,168,.04)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.12)', fontSize:22 }}>⌂</div>
-                    <div style={{ padding:'8px 9px 10px' }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:'#fff', marginBottom:2 }}>{fmt(l.ListPrice)}</div>
-                      <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>{addr || l.City}</div>
-                      <div style={{ fontSize:10, color:'rgba(255,255,255,.25)' }}>
-                        {[l.BedroomsTotal && `${l.BedroomsTotal} bd`, l.BathroomsTotalInteger && `${l.BathroomsTotalInteger} ba`].filter(Boolean).join(' · ')}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {filtered.map(l => (
+                <ResultCard
+                  key={l.ListingKey}
+                  listing={l}
+                  onClick={() => navigate(`/listing/${l.ListingKey}`)}
+                />
+              ))}
             </div>
           )}
         </div>

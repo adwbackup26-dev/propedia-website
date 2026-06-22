@@ -340,7 +340,7 @@ function Pagination({ page, pages, onPageChange }) {
 }
 
 // ── URL ↔ modal state helpers ─────────────────────────────────────────────────
-function modalToURL(m) {
+function modalToURL(m, extra = {}) {
   const sp = new URLSearchParams();
   if (m.propType   !== 'res-sale') sp.set('pt',       m.propType);
   if (m.minPrice)                  sp.set('minPrice',  m.minPrice);
@@ -349,6 +349,10 @@ function modalToURL(m) {
   if (m.baths)                     sp.set('baths',     m.baths);
   if (m.parking)                   sp.set('parking',   m.parking);
   if (m.structures.length)         sp.set('st',        m.structures.join(','));
+  if (extra.city)                  sp.set('city',      extra.city);
+  if (extra.search)                sp.set('search',    extra.search);
+  if (extra.postalCode)            sp.set('postal',    extra.postalCode);
+  if (extra.sort && extra.sort !== 'relevance') sp.set('sort', extra.sort);
   return sp.toString();
 }
 
@@ -367,8 +371,11 @@ function urlToModal() {
 }
 
 function urlToApiFilters() {
+  const sp = new URLSearchParams(window.location.search);
   const m  = urlToModal();
   const pt = PROP_TYPES.find(p => p.id === m.propType) || PROP_TYPES[0];
+  const sortId  = sp.get('sort') || 'relevance';
+  const sortOpt = SORT_OPTIONS.find(o => o.id === sortId) || SORT_OPTIONS[0];
   return {
     ...DEFAULT_FILTERS_SHAPE,
     transactionType: pt.tx,
@@ -379,6 +386,11 @@ function urlToApiFilters() {
     minBaths:        m.baths,
     minParking:      m.parking,
     structures:      m.structures.join(','),
+    city:            sp.get('city')   || '',
+    search:          sp.get('search') || '',
+    postalCode:      sp.get('postal') || '',
+    sortBy:          sortOpt.sortBy,
+    sortDir:         sortOpt.sortDir,
   };
 }
 
@@ -482,7 +494,10 @@ export default function ListingsPage() {
   const [vowOpen,    setVowOpen]    = useState(false);
   const [hasVOW,     setHasVOW]     = useState(() => getVOWSession());
   const [userPrefs,  setUserPrefs]  = useState(() => getUserPrefs());
-  const [search,     setSearch]     = useState('');
+  const [search,     setSearch]     = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('search') || sp.get('city') || '';
+  });
   const [acOpen,     setAcOpen]     = useState(false);
   const [acIdx,      setAcIdx]      = useState(-1);
 
@@ -492,37 +507,44 @@ export default function ListingsPage() {
   const searchWrapRef = useRef(null);
   const suggestions   = getSuggestions(search);
 
+  const syncSearchURL = useCallback((patch) => {
+    const sp = new URLSearchParams(window.location.search);
+    const set = (k, v) => v ? sp.set(k, v) : sp.delete(k);
+    set('city',   patch.city   ?? sp.get('city')   ?? '');
+    set('search', patch.search ?? sp.get('search') ?? '');
+    set('postal', patch.postalCode ?? sp.get('postal') ?? '');
+    window.history.replaceState(null, '', sp.toString() ? `?${sp}` : window.location.pathname);
+  }, []);
+
   const commitSuggestion = useCallback(s => {
     setSearch(s.label); setAcOpen(false); setAcIdx(-1);
     const term = s.searchTerm || s.label;
+    let patch;
     switch (s.type) {
       case 'city':
-        applyWith({ city: s.label, search: '', postalCode: '' });
-        break;
+        patch = { city: s.label, search: '', postalCode: '' }; break;
       case 'region':
-        // Regions span many cities — clear city filter, show all GTA
-        applyWith({ city: '', search: '', postalCode: '' });
-        break;
+        patch = { city: '', search: '', postalCode: '' }; break;
       case 'hood':
-        applyWith({ search: term, city: s.city || '', postalCode: '' });
-        break;
       case 'road':
       case 'landmark':
-        applyWith({ search: term, city: s.city || '', postalCode: '' });
-        break;
       case 'intersection':
-        // Search by the primary street name
-        applyWith({ search: term, city: s.city || '', postalCode: '' });
-        break;
+        patch = { search: term, city: s.city || '', postalCode: '' }; break;
       case 'postal':
-        applyWith({ postalCode: term, city: '', search: '' });
-        break;
+        patch = { postalCode: term, city: '', search: '' }; break;
       default:
-        applyWith({ search: term, city: '', postalCode: '' });
+        patch = { search: term, city: '', postalCode: '' };
     }
-  }, [applyWith]);
+    applyWith(patch);
+    syncSearchURL(patch);
+  }, [applyWith, syncSearchURL]);
 
-  const handleSearch = e => { e.preventDefault(); setAcOpen(false); applyWith({ search, city: '' }); };
+  const handleSearch = e => {
+    e.preventDefault(); setAcOpen(false);
+    const patch = { search, city: '' };
+    applyWith(patch);
+    syncSearchURL(patch);
+  };
 
   const handleSearchKey = e => {
     if (!acOpen || !suggestions.length) return;
@@ -558,10 +580,16 @@ export default function ListingsPage() {
       sortDir:         sortOpt.sortDir,
     });
     setModalValues(m);
-    // sync URL for shareable links
-    const qs = modalToURL(m);
+    // sync URL — preserve city/search/postal already in URL, add modal fields
+    const sp = new URLSearchParams(window.location.search);
+    const qs = modalToURL(m, {
+      city:       sp.get('city')   || '',
+      search:     sp.get('search') || '',
+      postalCode: sp.get('postal') || '',
+      sort:       sortId,
+    });
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [applyWith]);
+  }, [applyWith, sortId]);
 
   const handleReset = useCallback(() => {
     resetFilters();

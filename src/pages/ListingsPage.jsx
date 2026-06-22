@@ -7,7 +7,7 @@ import FilterModal, { PROP_TYPES, DEFAULT_MODAL } from '../components/FilterModa
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
 import CompareBar from '../components/CompareBar.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
-import { useListings, useCompare, getVOWSession, getUserPrefs } from '../hooks/useListings.js';
+import { useListings, useCompare, getVOWSession, getUserPrefs, DEFAULT_FILTERS as DEFAULT_FILTERS_SHAPE } from '../hooks/useListings.js';
 import { computeMatchScore } from '../utils/format.js';
 import '../styles/listings.css';
 
@@ -366,6 +366,22 @@ function urlToModal() {
   };
 }
 
+function urlToApiFilters() {
+  const m  = urlToModal();
+  const pt = PROP_TYPES.find(p => p.id === m.propType) || PROP_TYPES[0];
+  return {
+    ...DEFAULT_FILTERS_SHAPE,
+    transactionType: pt.tx,
+    propertyType:    pt.pt,
+    minPrice:        m.minPrice,
+    maxPrice:        m.maxPrice,
+    minBeds:         m.beds,
+    minBaths:        m.baths,
+    minParking:      m.parking,
+    structures:      m.structures.join(','),
+  };
+}
+
 // ── active filter count for Filters button badge ──────────────────────────────
 function countActive(m) {
   return [
@@ -456,7 +472,7 @@ function SortDropdown({ current, onChange }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ListingsPage() {
   const { listings, total, pages, page, filters, loading, error,
-          applyWith, resetFilters, goToPage } = useListings();
+          applyWith, resetFilters, goToPage } = useListings(urlToApiFilters());
   const { saved, toggleSave, isSaved, clearAll } = useCompare();
   const navigate = useNavigate();
 
@@ -475,23 +491,6 @@ export default function ListingsPage() {
 
   const searchWrapRef = useRef(null);
   const suggestions   = getSuggestions(search);
-
-  // On mount: apply any filters encoded in the URL
-  useEffect(() => {
-    const m = urlToModal();
-    const pt = PROP_TYPES.find(p => p.id === m.propType) || PROP_TYPES[0];
-    applyWith({
-      transactionType: pt.tx,
-      propertyType:    pt.pt,
-      minPrice:        m.minPrice,
-      maxPrice:        m.maxPrice,
-      minBeds:         m.beds,
-      minBaths:        m.baths,
-      minParking:      m.parking,
-      structures:      m.structures.join(','),
-    });
-    setModalValues(m);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commitSuggestion = useCallback(s => {
     setSearch(s.label); setAcOpen(false); setAcIdx(-1);

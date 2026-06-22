@@ -67,11 +67,14 @@ export default async function handler(req, res) {
         'Detached':      'Detached',
         'Semi-Detached': 'Semi-Detached',
         'Townhouse':     'Att/Row/Twnhouse',
-        'Condo':         'Condo Apt',
+        'Condo':         null,                 // handled specially below (two TRREB values)
       };
       const subtypeClauses = list
-        .filter(s => SUBTYPE_MAP[s])
+        .filter(s => SUBTYPE_MAP[s] !== undefined && SUBTYPE_MAP[s] !== null)
         .map(s => `PropertySubType eq '${SUBTYPE_MAP[s]}'`);
+      if (list.includes('Condo')) {
+        subtypeClauses.push("(PropertySubType eq 'Condo Apt' or PropertySubType eq 'Condo Apartment' or PropertySubType eq 'Co-op Apt')");
+      }
       const hasFreehold = list.includes('Freehold');
       const allClauses = [
         ...subtypeClauses,

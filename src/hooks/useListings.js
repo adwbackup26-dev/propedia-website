@@ -21,9 +21,9 @@ export const DEFAULT_FILTERS = {
 
 const PAGE_SIZE = 20;
 
-export function useListings() {
-  const [filters, setFiltersState]   = useState(DEFAULT_FILTERS);
-  const [applied, setApplied]        = useState(DEFAULT_FILTERS);
+export function useListings(initialFilters = DEFAULT_FILTERS) {
+  const [filters, setFiltersState]   = useState(initialFilters);
+  const [applied, setApplied]        = useState(initialFilters);
   const [page, setPage]              = useState(1);
   const [listings, setListings]      = useState([]);
   const [total, setTotal]            = useState(0);
@@ -67,10 +67,19 @@ export function useListings() {
 }
 
 export function getVOWSession() {
-  try { return document.cookie.split(';').some(c => c.trim().startsWith('propedia_vow=1')); } catch { return false; }
+  try { return localStorage.getItem('propedia_vow') === '1'; } catch { return false; }
+}
+export function setVOWSession(prefs) {
+  try {
+    localStorage.setItem('propedia_vow', '1');
+    if (prefs) localStorage.setItem('propedia_prefs', JSON.stringify(prefs));
+  } catch { /* ignore */ }
 }
 export function getUserPrefs() {
   try {
+    const local = localStorage.getItem('propedia_prefs');
+    if (local) return JSON.parse(local);
+    // fall back to cookie written by server
     const raw = document.cookie.split(';').find(c => c.trim().startsWith('propedia_prefs='));
     if (!raw) return null;
     return JSON.parse(decodeURIComponent(raw.split('=').slice(1).join('=')));

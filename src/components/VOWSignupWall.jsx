@@ -4,6 +4,7 @@
 // captures name, email, budget, areas, beds — feeds Match Score.
 
 import React, { useState } from 'react';
+import { setVOWSession } from '../hooks/useListings.js';
 
 const GTA_AREAS = [
   'Mississauga', 'Toronto', 'Brampton', 'Oakville',
@@ -74,6 +75,7 @@ export default function VOWSignupWall({ onSuccess, onDismiss, trigger = 'general
         body: JSON.stringify({ name, email, maxBudget, areas, minBeds, needsParking, needsTransit }),
       });
       if (!res.ok) throw new Error('Registration failed. Please try again.');
+      setVOWSession({ name, maxBudget, areas, minBeds });
       setStep('done');
       setTimeout(() => onSuccess?.(), 1200);
     } catch (err) {

@@ -13,7 +13,7 @@
 // (useful during development). Leads are logged to Vercel function logs only.
 
 const AIRTABLE_API = 'https://api.airtable.com/v0';
-const TABLE_NAME   = 'VOW Signups';
+const TABLE_NAME   = 'Leads';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -67,10 +67,13 @@ export default async function handler(req, res) {
                 ListingAddress: listingAddress || '',
                 ListingKey:     listingKey     || '',
                 Timestamp:      new Date().toISOString(),
-                Status:         'New',
                 MaxBudget:      maxBudget ? parseInt(maxBudget) : null,
                 PreferredAreas: Array.isArray(areas) ? areas.join(', ') : (areas || ''),
                 MinBeds:        minBeds ? parseInt(minBeds) : null,
+                NeedsParking:   needsParking === true || needsParking === 'true',
+                NeedsTransit:   needsTransit === true || needsTransit === 'true',
+                VOWEnabled:     true,
+                Source:         'Propedia VOW Signup',
               },
             }],
           }),

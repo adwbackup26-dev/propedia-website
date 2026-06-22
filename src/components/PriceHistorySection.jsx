@@ -152,9 +152,12 @@ export default function PriceHistorySection({ listing, isVOWMember, onSignupClic
   const history      = useMemo(() => buildHistory(listing), [listing]);
   const placeholder  = useMemo(() => buildPlaceholderRows(listing), [listing]);
 
-  const dom      = listing.DaysOnMarket;
-  const listDate = fmtDate(listing.ModificationTimestamp);
-  const hasEvents = history.length > 0;
+  const dom        = listing.DaysOnMarket;
+  const listDate   = fmtDate(listing.ModificationTimestamp);
+  const hasEvents  = history.length > 0;
+  const isClosed   = listing.StandardStatus === 'Closed';
+  // Sold listing loaded via IDX token — ClosePrice/CloseDate are VOW-gated fields
+  const missingCloseData = isClosed && !listing.ClosePrice;
 
   return (
     <div style={card}>
@@ -172,20 +175,31 @@ export default function PriceHistorySection({ listing, isVOWMember, onSignupClic
       {/* Table area */}
       <div style={{ position:'relative' }}>
         {/* Scrollable table wrapper for mobile */}
-        <div
-          style={{
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            ...(isVOWMember ? {} : {
-              filter: 'blur(4px)',
-              opacity: 0.5,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }),
-          }}
-        >
-          <HistoryTable rows={isVOWMember ? (hasEvents ? history : placeholder) : placeholder}/>
-        </div>
+        {/* VOW member + sold listing with no close price from API */}
+        {isVOWMember && missingCloseData ? (
+          <div style={{ padding:'20px 16px', textAlign:'center' }}>
+            <i className="ti ti-lock-open" style={{ fontSize:24, color:'rgba(255,255,255,.2)', display:'block', marginBottom:10 }}/>
+            <p style={{ fontSize:12, color:'rgba(255,255,255,.4)', margin:0, lineHeight:1.6 }}>
+              Sold price data is not available for this listing.<br/>
+              Contact your agent for full transaction details.
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              ...(isVOWMember ? {} : {
+                filter: 'blur(4px)',
+                opacity: 0.5,
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }),
+            }}
+          >
+            <HistoryTable rows={isVOWMember ? (hasEvents ? history : placeholder) : placeholder}/>
+          </div>
+        )}
 
         {/* Signup wall overlay — non-members only */}
         {!isVOWMember && (

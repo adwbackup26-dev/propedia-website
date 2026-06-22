@@ -17,8 +17,10 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   // ── Auth check ───────────────────────────────────────────────────────────
-  const token = process.env.TRREB_IDX_TOKEN || process.env.TRREB_TOKEN;
-  if (!token) return res.status(500).json({ error: 'TRREB_IDX_TOKEN not configured' });
+  // VOW token required for ClosePrice/CloseDate on sold listings.
+  // Falls back to IDX token; sold price fields will be absent but listing loads.
+  const token = process.env.TRREB_VOW_TOKEN || process.env.TRREB_IDX_TOKEN || process.env.TRREB_TOKEN;
+  if (!token) return res.status(500).json({ error: 'TRREB token not configured' });
 
   // ── Parse query params ───────────────────────────────────────────────────
   const { listingKey } = req.query;
@@ -41,8 +43,12 @@ export default async function handler(req, res) {
     'InternetEntireListingDisplayYN',
   ].join(',');
 
-  // ── Build OData query manually ──────────────────────────────────────────
-  const filterString = `ListingKey eq '${listingKey}' and InternetEntireListingDisplayYN eq true`;
+  // ── Build OData query ────────────────────────────────────────────────────
+  // Do NOT filter by InternetEntireListingDisplayYN here — sold/closed listings
+  // often have it set to false after closing, which would cause a false 404.
+  // We check the flag in code after fetching and return 403 for active listings
+  // that explicitly opt out; sold listings are displayed regardless.
+  const filterString = `ListingKey eq '${listingKey}'`;
   const queryParts = [
     `$filter=${encodeURIComponent(filterString)}`,
     `$top=1`,
@@ -76,11 +82,13 @@ export default async function handler(req, res) {
     const listing = (data.value || [])[0];
 
     if (!listing) {
-      return res.status(404).json({ error: 'Listing not found or no longer active' });
+      return res.status(404).json({ error: 'Listing not found' });
     }
 
-    // ── Compliance check ────────────────────────────────────────────────
-    if (!listing.InternetEntireListingDisplayYN) {
+    // ── Compliance: block active/non-closed listings that opted out ──────
+    // Sold/closed listings are always displayable (they're historical records).
+    const isClosed = listing.StandardStatus === 'Closed';
+    if (!isClosed && listing.InternetEntireListingDisplayYN === false) {
       return res.status(403).json({ error: 'Listing not authorised for display' });
     }
 

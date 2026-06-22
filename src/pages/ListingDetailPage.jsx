@@ -517,7 +517,7 @@ export default function ListingDetailPage() {
     fetch(`/api/listing?listingKey=${encodeURIComponent(listingKey)}`)
       .then(r=>r.ok?r.json():Promise.reject(r.status))
       .then(d=>{ setListing(d.listing); window.scrollTo({ top:0, behavior:'instant' }); })
-      .catch(()=>setError('Listing not found or no longer active.'))
+      .catch(()=>setError('Listing not found.'))
       .finally(()=>setLoading(false));
   }, [listingKey]);
 

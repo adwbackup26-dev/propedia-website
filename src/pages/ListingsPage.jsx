@@ -7,6 +7,7 @@ import FilterModal, { PROP_TYPES, DEFAULT_MODAL } from '../components/FilterModa
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
 import CompareBar from '../components/CompareBar.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
+import Logo from '../components/Logo.jsx';
 import { useListings, useCompare, getVOWSession, getUserPrefs, DEFAULT_FILTERS as DEFAULT_FILTERS_SHAPE } from '../hooks/useListings.js';
 import { computeMatchScore } from '../utils/format.js';
 import '../styles/listings.css';
@@ -679,7 +680,10 @@ export default function ListingsPage() {
     <>
       {/* ── Nav ───────────────────────────────────────────────────────── */}
       <header className="mp-nav" role="banner">
-        <Link to="/" className="mp-nav__logo">Propedia</Link>
+        <Link to="/" className="mp-nav__logo" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
+          <Logo size={32} />
+          <span>Propedia</span>
+        </Link>
 
         <div ref={searchWrapRef} style={{ position:'relative', flex:1, minWidth:0 }}>
           <form className="mp-nav__search" onSubmit={handleSearch} role="search">

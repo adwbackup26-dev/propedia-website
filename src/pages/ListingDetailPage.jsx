@@ -6,6 +6,7 @@ import AvailableButton from '../components/AvailableButton.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import PriceHistorySection from '../components/PriceHistorySection.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
+import Logo from '../components/Logo.jsx';
 import { useCompare, getVOWSession } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
 import '../styles/listings.css';
@@ -663,7 +664,10 @@ export default function ListingDetailPage() {
 
       {/* Nav */}
       <header style={{ position:'sticky', top:0, zIndex:200, height:46, background:'#0C0D10', borderBottom:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', padding:'0 16px', gap:10 }}>
-        <Link to="/" style={{ fontSize:18, fontWeight:600, color:'#00B4A8', letterSpacing:'-.02em', textDecoration:'none', flexShrink:0 }}>Propedia</Link>
+        <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
+          <Logo size={28} />
+          <span style={{ fontSize:18, fontWeight:600, color:'#00B4A8', letterSpacing:'-.02em' }}>Propedia</span>
+        </Link>
         <span style={{ color:'rgba(255,255,255,.15)', fontSize:16 }}>›</span>
         <button onClick={()=>navigate(-1)} style={{ fontSize:12, color:'rgba(255,255,255,.5)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>← Back to Listings</button>
         <button onClick={()=>toggleSave(listing)} style={{ marginLeft:'auto', height:32, padding:'0 14px', border:'1px solid', borderRadius:6, fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:'inherit', flexShrink:0, borderColor:saved?'#00B4A8':'rgba(255,255,255,.14)', background:saved?'rgba(0,180,168,.12)':'none', color:saved?'#00B4A8':'rgba(255,255,255,.55)', display:'flex', alignItems:'center', gap:5, transition:'all .2s' }}>

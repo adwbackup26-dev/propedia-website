@@ -41,7 +41,7 @@ const PERKS = [
   { icon: 'ti-scale',          title: 'Fairness analysis',   desc: 'AI-powered "Is this fairly priced?" verdict per listing' },
 ];
 
-export default function VOWSignupWall({ onSuccess, onDismiss, trigger = 'general' }) {
+export default function VOWSignupWall({ onSuccess, onDismiss, trigger = 'general', listingKey = '', listingAddress = '' }) {
   const [step, setStep]       = useState('signup');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -72,7 +72,7 @@ export default function VOWSignupWall({ onSuccess, onDismiss, trigger = 'general
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, maxBudget, areas, minBeds, needsParking, needsTransit }),
+        body: JSON.stringify({ name, email, maxBudget, areas, minBeds, needsParking, needsTransit, listingKey, listingAddress }),
       });
       if (!res.ok) throw new Error('Registration failed. Please try again.');
       setVOWSession({ name, maxBudget, areas, minBeds });

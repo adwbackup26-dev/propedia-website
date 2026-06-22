@@ -13,7 +13,7 @@
 // (useful during development). Leads are logged to Vercel function logs only.
 
 const AIRTABLE_API = 'https://api.airtable.com/v0';
-const TABLE_NAME   = 'Leads'; // Make sure this table exists in your Airtable base
+const TABLE_NAME   = 'VOW Signups';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,13 +30,15 @@ export default async function handler(req, res) {
   }
 
   const {
-    name         = '',
-    email        = '',
-    maxBudget    = '',
-    areas        = [],           // array of city strings
-    minBeds      = '',
-    needsParking = false,
-    needsTransit = false,
+    name           = '',
+    email          = '',
+    maxBudget      = '',
+    areas          = [],
+    minBeds        = '',
+    needsParking   = false,
+    needsTransit   = false,
+    listingKey     = '',
+    listingAddress = '',
   } = body || {};
 
   if (!email || !email.includes('@')) {
@@ -60,16 +62,15 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             records: [{
               fields: {
-                Name:          name || '(not provided)',
-                Email:         email,
-                MaxBudget:     maxBudget ? parseInt(maxBudget) : null,
+                Email:          email,
+                Name:           name || '(not provided)',
+                ListingAddress: listingAddress || '',
+                ListingKey:     listingKey     || '',
+                Timestamp:      new Date().toISOString(),
+                Status:         'New',
+                MaxBudget:      maxBudget ? parseInt(maxBudget) : null,
                 PreferredAreas: Array.isArray(areas) ? areas.join(', ') : (areas || ''),
-                MinBeds:       minBeds ? parseInt(minBeds) : null,
-                NeedsParking:  needsParking === true || needsParking === 'true',
-                NeedsTransit:  needsTransit === true || needsTransit === 'true',
-                SignupDate:    new Date().toISOString(),
-                VOWEnabled:    true,
-                Source:        'Propedia VOW Signup',
+                MinBeds:        minBeds ? parseInt(minBeds) : null,
               },
             }],
           }),

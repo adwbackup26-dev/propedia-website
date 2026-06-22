@@ -859,6 +859,8 @@ export default function ListingDetailPage() {
       {vowOpen && (
         <VOWSignupWall
           trigger="price-history"
+          listingKey={listing.ListingKey}
+          listingAddress={address}
           onSuccess={() => { setHasVOW(true); setVowOpen(false); }}
           onDismiss={() => setVowOpen(false)}
         />

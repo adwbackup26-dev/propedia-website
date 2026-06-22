@@ -82,9 +82,12 @@ export default async function handler(req, res) {
   //   "montevideo"        → numPart="",     namePart="montevideo"
   //   "6100 montevideo"   → numPart="6100", namePart="montevideo"
   //   "6100 Montevideo Rd"→ numPart="6100", namePart="Montevideo Rd"
-  const match   = term.match(/^(\d+)\s*(.*)$/);
+  // TRREB stores StreetName in title/uppercase — normalise to uppercase so
+  // contains() matches regardless of what case the user typed.
+  const upper   = term.toUpperCase();
+  const match   = upper.match(/^(\d+)\s*(.*)$/);
   const numPart  = match ? match[1].replace(/'/g, "''") : '';
-  const namePart = (match ? match[2] : term).replace(/'/g, "''").trim();
+  const namePart = (match ? match[2] : upper).replace(/'/g, "''").trim();
 
   let streetFilter;
   if (numPart && namePart) {

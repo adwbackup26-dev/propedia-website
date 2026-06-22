@@ -33,7 +33,11 @@ async function queryTRREB(token, filter, top = 8) {
     },
   });
 
-  if (!r.ok) return [];
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    console.error('[api/search] TRREB error', r.status, body.slice(0, 300));
+    return [];
+  }
   const data = await r.json();
   return (data.value || []).filter(l => l.InternetEntireListingDisplayYN !== false);
 }
@@ -72,14 +76,27 @@ export default async function handler(req, res) {
   const vowToken = process.env.TRREB_VOW_TOKEN  || idxToken;
   if (!idxToken) return res.status(500).json({ error: 'No TRREB token' });
 
-  // Escape single quotes for OData
-  const safe = term.replace(/'/g, "''");
+  // Parse query into optional street number + street name parts.
+  // Examples:
+  //   "6100"              → numPart="6100", namePart=""
+  //   "montevideo"        → numPart="",     namePart="montevideo"
+  //   "6100 montevideo"   → numPart="6100", namePart="montevideo"
+  //   "6100 Montevideo Rd"→ numPart="6100", namePart="Montevideo Rd"
+  const match   = term.match(/^(\d+)\s*(.*)$/);
+  const numPart  = match ? match[1].replace(/'/g, "''") : '';
+  const namePart = (match ? match[2] : term).replace(/'/g, "''").trim();
 
-  // Determine if query starts with digits (street number search) or is a name
-  const isNumeric = /^\d/.test(safe);
-  const streetFilter = isNumeric
-    ? `(startswith(StreetNumber,'${safe}') or contains(StreetName,'${safe}'))`
-    : `contains(StreetName,'${safe}')`;
+  let streetFilter;
+  if (numPart && namePart) {
+    // e.g. "6100 montevideo" → both conditions must be true
+    streetFilter = `(startswith(StreetNumber,'${numPart}') and contains(StreetName,'${namePart}'))`;
+  } else if (numPart) {
+    // purely numeric → match street number
+    streetFilter = `startswith(StreetNumber,'${numPart}')`;
+  } else {
+    // purely text → match street name
+    streetFilter = `contains(StreetName,'${namePart}')`;
+  }
 
   const baseActive = [
     'InternetEntireListingDisplayYN eq true',

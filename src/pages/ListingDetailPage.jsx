@@ -496,6 +496,71 @@ function KeyMetrics({ listing, monthlyTotal, isLease }) {
   );
 }
 
+// ── SoldSummaryCard ───────────────────────────────────────────────────────────
+function SoldSummaryCard({ listing }) {
+  const {
+    ListPrice, OriginalListPrice, ClosePrice, CloseDate,
+    ModificationTimestamp, DaysOnMarket,
+  } = listing;
+
+  const askPrice   = ListPrice || OriginalListPrice;
+  const soldPrice  = ClosePrice;
+  const listedDate = ModificationTimestamp
+    ? new Date(ModificationTimestamp).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
+    : '—';
+  const soldDate = CloseDate
+    ? new Date(CloseDate).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
+    : '—';
+
+  const priceDelta   = soldPrice && askPrice ? soldPrice - askPrice : null;
+  const pricePct     = priceDelta != null && askPrice ? ((priceDelta / askPrice) * 100).toFixed(1) : null;
+  const overAsk      = priceDelta != null && priceDelta > 0;
+  const dom          = DaysOnMarket ?? null;
+  const velocity     = dom == null ? null : dom <= 7 ? 'Very fast' : dom <= 14 ? 'Fast' : dom <= 30 ? 'Moderate' : 'Slow';
+  const velocityColor= dom == null ? 'rgba(255,255,255,.4)' : dom <= 14 ? '#34D399' : dom <= 30 ? '#FBBF24' : '#F87171';
+
+  const row = (label, value, valueStyle = {}) => (
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
+      <span style={{ fontSize:11, color:'rgba(255,255,255,.38)', textTransform:'uppercase', letterSpacing:'.06em', fontWeight:600 }}>{label}</span>
+      <span style={{ fontSize:13, fontWeight:600, color:'rgba(255,255,255,.85)', ...valueStyle }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ ...card, borderColor:'rgba(248,113,113,.18)' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+        <i className="ti ti-gavel" style={{ fontSize:15, color:'#F87171' }}/>
+        <span style={{ fontSize:11, fontWeight:700, letterSpacing:'.09em', textTransform:'uppercase', color:'#F87171' }}>Sold Property</span>
+      </div>
+
+      {soldPrice ? (
+        <>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,.35)', textTransform:'uppercase', letterSpacing:'.07em', marginBottom:4 }}>Sold for</div>
+            <div style={{ fontSize:28, fontWeight:700, letterSpacing:'-.03em', color:'#fff' }}>{fmt(soldPrice)}</div>
+            {priceDelta != null && (
+              <div style={{ fontSize:12, color: overAsk ? '#34D399' : '#F87171', marginTop:3 }}>
+                {overAsk ? '+' : ''}{fmt(Math.abs(priceDelta))} ({overAsk ? '+' : ''}{pricePct}%) {overAsk ? 'over asking' : 'under asking'}
+              </div>
+            )}
+          </div>
+
+          {row('Asking price', askPrice ? fmt(askPrice) : '—')}
+        </>
+      ) : (
+        <div style={{ marginBottom:14, fontSize:12, color:'rgba(255,255,255,.35)' }}>
+          Sold price not available (IDX listing)
+        </div>
+      )}
+
+      {row('Listed', listedDate)}
+      {row('Sold', soldDate)}
+      {dom != null && row('Days on market', `${dom} days`)}
+      {velocity && row('Market velocity', velocity, { color: velocityColor })}
+    </div>
+  );
+}
+
 export default function ListingDetailPage() {
   const { listingKey } = useParams();
   const navigate = useNavigate();
@@ -568,6 +633,7 @@ export default function ListingDetailPage() {
   const address = formatAddress(listing);
   const saved   = isSaved(listing.ListingKey);
   const isLease = listing.TransactionType === 'For Lease';
+  const isSold  = listing.StandardStatus === 'Closed';
   const currentPhoto = photos[photoIdx]?.url || null;
   const photoCount   = photos.length;
 
@@ -608,10 +674,12 @@ export default function ListingDetailPage() {
       {/* Mobile bottom CTA */}
       <div className="mobile-cta" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:300, background:'#0C0D10', borderTop:'1px solid rgba(255,255,255,.1)', padding:'10px 16px', gap:10, alignItems:'center' }}>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:16, fontWeight:600 }}>{fmt(listing.ListPrice)}</div>
+          <div style={{ fontSize:16, fontWeight:600 }}>
+            {isSold && listing.ClosePrice ? <><span style={{ fontSize:10, color:'#F87171', fontWeight:700, marginRight:5 }}>SOLD</span>{fmt(listing.ClosePrice)}</> : fmt(listing.ListPrice)}
+          </div>
           <div style={{ fontSize:10, color:'rgba(255,255,255,.4)' }}>{listing.BedroomsTotal}bd · {listing.BathroomsTotalInteger}ba</div>
         </div>
-        <AvailableButton listing={listing}/>
+        {!isSold && <AvailableButton listing={listing}/>}
       </div>
 
       <div style={{ maxWidth:1140, margin:'0 auto', padding:'0 14px 80px' }}>
@@ -628,7 +696,7 @@ export default function ListingDetailPage() {
               <button onClick={()=>setPhotoIdx(i=>(i+1)%photoCount)} style={{ position:'absolute', right:0, top:0, bottom:0, width:52, background:'rgba(0,0,0,0)', border:'none', color:'rgba(255,255,255,0)', fontSize:28, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background .2s,color .2s' }} onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,0,0,.4)';e.currentTarget.style.color='rgba(255,255,255,.9)'}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,0,0,0)';e.currentTarget.style.color='rgba(255,255,255,0)'}}>›</button>
             </>}
             <div style={{ position:'absolute', top:14, left:14, display:'flex', gap:8 }}>
-              <span style={{ fontSize:10, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'4px 11px', borderRadius:5, background:isLease?'rgba(59,130,246,.85)':'rgba(16,185,129,.85)', color:'#fff' }}>{listing.TransactionType}</span>
+              <span style={{ fontSize:10, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'4px 11px', borderRadius:5, background:isSold?'rgba(248,113,113,.85)':isLease?'rgba(59,130,246,.85)':'rgba(16,185,129,.85)', color:'#fff' }}>{isSold?'Sold':listing.TransactionType}</span>
               {listing.OriginalListPrice&&listing.OriginalListPrice>listing.ListPrice&&<span style={{ fontSize:10, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'rgba(239,68,68,.8)', color:'#fff' }}>Price Reduced {fmt(listing.OriginalListPrice-listing.ListPrice)}</span>}
             </div>
             <button onClick={()=>setLightbox(true)} className="view-all-photos-btn" style={{ position:'absolute', bottom:72, right:14, height:30, padding:'0 12px', background:'rgba(0,0,0,.6)', border:'1px solid rgba(255,255,255,.18)', borderRadius:7, color:'rgba(255,255,255,.8)', fontSize:11, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
@@ -652,21 +720,29 @@ export default function ListingDetailPage() {
           )}
         </div>
 
-        {/* Intel strip — desktop only */}
-        <div className="intel-strip">
-          <IntelStrip listing={listing} monthlyTotal={monthlyTotal}/>
-        </div>
+        {/* Intel strip — desktop only, active listings only */}
+        {!isSold && (
+          <div className="intel-strip">
+            <IntelStrip listing={listing} monthlyTotal={monthlyTotal}/>
+          </div>
+        )}
 
         {/* Two column */}
         <div className="detail-grid">
           {/* LEFT */}
           <div>
-            <PriceIntelligence listing={listing}/>
-            {!isLease&&<Calculator price={listing.ListPrice} city={listing.City} propertyType={listing.PropertySubType} onTotal={setMonthlyTotal}/>}
-            <NegotiateSignal listing={listing}/>
+            {isSold ? (
+              <SoldSummaryCard listing={listing}/>
+            ) : (
+              <>
+                <PriceIntelligence listing={listing}/>
+                {!isLease&&<Calculator price={listing.ListPrice} city={listing.City} propertyType={listing.PropertySubType} onTotal={setMonthlyTotal}/>}
+                <NegotiateSignal listing={listing}/>
+              </>
+            )}
             <PropertyMap listing={listing}/>
             <Neighbourhood/>
-            {!isLease&&<InvestmentAnalysis listing={listing}/>}
+            {!isSold&&!isLease&&<InvestmentAnalysis listing={listing}/>}
 
             {/* Property details */}
             <div style={card}>
@@ -709,23 +785,38 @@ export default function ListingDetailPage() {
 
           {/* RIGHT */}
           <div className="detail-right">
-            <ScoreGauge score={82} label={`Top 18% in ${listing.City}`}/>
+            {!isSold && <ScoreGauge score={82} label={`Top 18% in ${listing.City}`}/>}
             <div style={{ ...card, padding:'14px 15px' }}>
-              <div style={{ fontSize:20, fontWeight:600, letterSpacing:'-.025em', marginBottom:2 }}>{fmt(listing.ListPrice)}</div>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginBottom:12 }}>{address}</div>
-              <AvailableButton listing={listing}/>
+              {isSold ? (
+                <>
+                  {listing.ClosePrice
+                    ? <><div style={{ fontSize:9, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:'#F87171', marginBottom:3 }}>Sold price</div>
+                        <div style={{ fontSize:20, fontWeight:600, letterSpacing:'-.025em', marginBottom:2 }}>{fmt(listing.ClosePrice)}</div>
+                        <div style={{ fontSize:11, color:'rgba(255,255,255,.35)', marginBottom:4 }}>Listed at {fmt(listing.ListPrice)}</div></>
+                    : <><div style={{ fontSize:20, fontWeight:600, letterSpacing:'-.025em', marginBottom:2 }}>{fmt(listing.ListPrice)}</div>
+                        <div style={{ fontSize:11, color:'rgba(255,255,255,.35)', marginBottom:4 }}>Listed price</div></>
+                  }
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginBottom:10 }}>{address}</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize:20, fontWeight:600, letterSpacing:'-.025em', marginBottom:2 }}>{fmt(listing.ListPrice)}</div>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginBottom:12 }}>{address}</div>
+                  <AvailableButton listing={listing}/>
+                </>
+              )}
               <button onClick={()=>toggleSave(listing)} style={{ width:'100%', height:36, border:'1px solid', borderRadius:7, fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:'inherit', marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:6, transition:'all .2s', borderColor:saved?'#00B4A8':'rgba(255,255,255,.14)', background:saved?'rgba(0,180,168,.12)':'none', color:saved?'#00B4A8':'rgba(255,255,255,.5)' }}>
                 <i className={`ti ${saved?'ti-check':'ti-plus'}`} style={{ fontSize:13 }}/>{saved?'✓ Saved to DeepCompare':'Save to DeepCompare™'}
               </button>
             </div>
-            <KeyMetrics listing={listing} monthlyTotal={monthlyTotal} isLease={isLease}/>
+            {!isSold && <KeyMetrics listing={listing} monthlyTotal={monthlyTotal} isLease={isLease}/>}
           </div>
         </div>
 
-        {/* Price History */}
+        {/* Price History — sold listings always show (no VOW wall on historical data) */}
         <PriceHistorySection
           listing={listing}
-          isVOWMember={hasVOW}
+          isVOWMember={hasVOW || isSold}
           onSignupClick={() => setVowOpen(true)}
         />
 
@@ -743,9 +834,18 @@ export default function ListingDetailPage() {
 
         {/* Bottom CTA */}
         <div style={{ marginTop:20, background:'#111316', borderRadius:12, padding:'28px 24px', textAlign:'center', border:'1px solid rgba(255,255,255,.06)' }}>
-          <div style={{ fontSize:15, fontWeight:500, color:'rgba(255,255,255,.7)', marginBottom:6 }}>Ready to take the next step?</div>
-          <div style={{ fontSize:12, color:'rgba(255,255,255,.3)', marginBottom:18 }}>Book a showing at {address} — today</div>
-          <AvailableButton listing={listing}/>
+          {isSold ? (
+            <>
+              <div style={{ fontSize:15, fontWeight:500, color:'rgba(255,255,255,.7)', marginBottom:6 }}>Looking for similar properties?</div>
+              <div style={{ fontSize:12, color:'rgba(255,255,255,.3)', marginBottom:18 }}>This property has sold. Contact us to find comparable active listings.</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize:15, fontWeight:500, color:'rgba(255,255,255,.7)', marginBottom:6 }}>Ready to take the next step?</div>
+              <div style={{ fontSize:12, color:'rgba(255,255,255,.3)', marginBottom:18 }}>Book a showing at {address} — today</div>
+              <AvailableButton listing={listing}/>
+            </>
+          )}
           <div style={{ fontSize:11, color:'rgba(255,255,255,.22)', marginTop:12 }}>
             <strong style={{ color:'rgba(255,255,255,.35)' }}>Anirudha Warhadpande</strong> · HomeLife Miracle Realty Ltd. · 647-803-5288 · RECO #6011384
           </div>

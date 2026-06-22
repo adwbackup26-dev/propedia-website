@@ -276,6 +276,7 @@ const TYPE_ICON = {
   intersection: 'ti-arrows-cross',
   landmark:     'ti-star',
   postal:       'ti-mail',
+  listing:      'ti-home',
 };
 
 // ── suggestion engine ─────────────────────────────────────────────────────────
@@ -313,7 +314,43 @@ function getSuggestions(q) {
     return (rank[a.type] ?? 9) - (rank[b.type] ?? 9);
   });
 
-  return [...postalSuggestions, ...matched].slice(0, 12);
+  return [...postalSuggestions, ...matched].slice(0, 8);
+}
+
+// ── Address search hook — debounced API call for specific addresses ────────────
+function useAddressSearch(query) {
+  const [results, setResults] = React.useState([]);
+  const timerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    // Only run address search when query looks like a specific address
+    // (contains digit, or long enough that no static suggestions match well)
+    const q = query.trim();
+    if (q.length < 3) { setResults([]); return; }
+
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setResults((data.results || []).map(r => ({
+          type:       'listing',
+          listingKey: r.listingKey,
+          status:     r.status,
+          label:      [r.address, r.city, r.province, r.postalCode].filter(Boolean).join(', '),
+          display:    r.status,
+          city:       r.city,
+          searchTerm: r.address,
+          transactionType: r.transactionType,
+        })));
+      } catch { /* silent */ }
+    }, 380);
+
+    return () => clearTimeout(timerRef.current);
+  }, [query]);
+
+  return results;
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
@@ -504,8 +541,15 @@ export default function ListingsPage() {
   // modal state mirrors what's currently applied (for pre-populating on re-open)
   const [modalValues, setModalValues] = useState(() => urlToModal());
 
-  const searchWrapRef = useRef(null);
-  const suggestions   = getSuggestions(search);
+  const searchWrapRef  = useRef(null);
+  const staticSuggestions  = getSuggestions(search);
+  const addressResults     = useAddressSearch(search);
+  // Merge: address results first when query looks specific, static suggestions after (deduped by label)
+  const addressLabels = new Set(addressResults.map(r => r.label));
+  const suggestions = [
+    ...addressResults,
+    ...staticSuggestions.filter(s => !addressLabels.has(s.label)),
+  ].slice(0, 14);
 
   const syncSearchURL = useCallback((patch) => {
     const sp = new URLSearchParams(window.location.search);
@@ -517,7 +561,15 @@ export default function ListingsPage() {
   }, []);
 
   const commitSuggestion = useCallback(s => {
-    setSearch(s.label); setAcOpen(false); setAcIdx(-1);
+    setAcOpen(false); setAcIdx(-1);
+
+    // Direct-navigate to listing detail page — don't touch filter state
+    if (s.type === 'listing') {
+      navigate(`/listing/${s.listingKey}`);
+      return;
+    }
+
+    setSearch(s.label);
     const term = s.searchTerm || s.label;
     let patch;
     switch (s.type) {
@@ -537,7 +589,7 @@ export default function ListingsPage() {
     }
     applyWith(patch);
     syncSearchURL(patch);
-  }, [applyWith, syncSearchURL]);
+  }, [applyWith, syncSearchURL, navigate]);
 
   const handleSearch = e => {
     e.preventDefault(); setAcOpen(false);
@@ -656,28 +708,39 @@ export default function ListingsPage() {
             }}>
               {suggestions.length === 0 ? (
                 <div style={{ padding:'10px 14px', fontSize:12, color:'rgba(255,255,255,.3)' }}>No suggestions</div>
-              ) : suggestions.map((s, i) => (
-                <div
-                  key={`${s.type}-${s.label}`}
-                  onMouseDown={e => { e.preventDefault(); commitSuggestion(s); }}
-                  onMouseEnter={() => setAcIdx(i)}
-                  style={{
-                    padding:'9px 14px', fontSize:13, cursor:'pointer', display:'flex',
-                    alignItems:'center', gap:8,
-                    background: i === acIdx ? 'rgba(0,180,168,.12)' : 'transparent',
-                    color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.8)',
-                    borderBottom: i < suggestions.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none',
-                  }}
-                >
-                  <i className={`ti ${TYPE_ICON[s.type] || 'ti-map-pin'}`}
-                     style={{ fontSize:12, color: i === acIdx ? '#00B4A8' : 'rgba(255,255,255,.3)', flexShrink:0, width:14, textAlign:'center' }}/>
-                  <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {s.label}
-                    {s.city ? <span style={{ color:'rgba(255,255,255,.35)', marginLeft:4, fontSize:11 }}>· {s.city}</span> : null}
-                  </span>
-                  <span style={{ fontSize:10, color:'rgba(255,255,255,.22)', flexShrink:0 }}>{s.display}</span>
-                </div>
-              ))}
+              ) : suggestions.map((s, i) => {
+                const isListing = s.type === 'listing';
+                const isActive  = i === acIdx;
+                const statusColor = s.status === 'Sold' ? 'rgba(248,113,113,.9)' : 'rgba(52,211,153,.9)';
+                return (
+                  <div
+                    key={isListing ? `listing-${s.listingKey}` : `${s.type}-${s.label}`}
+                    onMouseDown={e => { e.preventDefault(); commitSuggestion(s); }}
+                    onMouseEnter={() => setAcIdx(i)}
+                    style={{
+                      padding:'9px 14px', fontSize:13, cursor:'pointer', display:'flex',
+                      alignItems:'center', gap:8,
+                      background: isActive ? 'rgba(0,180,168,.12)' : 'transparent',
+                      color: isActive ? '#00B4A8' : 'rgba(255,255,255,.8)',
+                      borderBottom: i < suggestions.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none',
+                    }}
+                  >
+                    <i className={`ti ${TYPE_ICON[s.type] || 'ti-map-pin'}`}
+                       style={{ fontSize:12, color: isActive ? '#00B4A8' : isListing ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.3)', flexShrink:0, width:14, textAlign:'center' }}/>
+                    <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {s.label}
+                      {!isListing && s.city ? <span style={{ color:'rgba(255,255,255,.35)', marginLeft:4, fontSize:11 }}>· {s.city}</span> : null}
+                    </span>
+                    {isListing ? (
+                      <span style={{ fontSize:10, fontWeight:600, padding:'2px 6px', borderRadius:3, background: s.status === 'Sold' ? 'rgba(248,113,113,.15)' : 'rgba(52,211,153,.15)', color: statusColor, flexShrink:0 }}>
+                        {s.status}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize:10, color:'rgba(255,255,255,.22)', flexShrink:0 }}>{s.display}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

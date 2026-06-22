@@ -1,6 +1,6 @@
 // src/components/ListingCard.jsx — dark photo-first card with carousel + mortgage estimate
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvailableButton from './AvailableButton.jsx';
 import { formatPrice, formatAddress, formatCityLine, formatDOM, domIsHigh,
@@ -19,7 +19,7 @@ export function ListingCardSkeleton() {
   );
 }
 
-export default function ListingCard({ listing, isSaved, onSave, userPrefs = null, listView = false }) {
+const ListingCard = memo(function ListingCard({ listing, isSaved, onSave, userPrefs = null, listView = false }) {
   const navigate = useNavigate();
   const [photoIdx, setPhotoIdx] = useState(0);
   const [photos, setPhotos] = useState([]);
@@ -62,20 +62,31 @@ export default function ListingCard({ listing, isSaved, onSave, userPrefs = null
   const matchScore = computeMatchScore(listing, userPrefs);
   const mortgage   = !isLease && price ? estimateMortgage(price) : null;
 
-  const prevPhoto = e => { e.stopPropagation(); setPhotoIdx(i => (i - 1 + photoCount) % photoCount); };
-  const nextPhoto = e => { e.stopPropagation(); setPhotoIdx(i => (i + 1) % photoCount); };
-  const handleCard = () => navigate(`/listing/${listing.ListingKey}`);
-  const handleSave = e => { e.stopPropagation(); onSave?.(listing); };
+  const prevPhoto = useCallback(e => {
+    e.stopPropagation();
+    setPhotoIdx(i => (i - 1 + photoCount) % photoCount);
+  }, [photoCount]);
+
+  const nextPhoto = useCallback(e => {
+    e.stopPropagation();
+    setPhotoIdx(i => (i + 1) % photoCount);
+  }, [photoCount]);
+
+  const handleCard = useCallback(() => navigate(`/listing/${listing.ListingKey}`), [navigate, listing.ListingKey]);
+  const handleSave = useCallback(e => { e.stopPropagation(); onSave?.(listing); }, [onSave, listing]);
 
   // Touch / swipe support
   const touchX = useRef(null);
-  const onTouchStart = e => { touchX.current = e.touches[0].clientX; };
-  const onTouchEnd   = e => {
+  const onTouchStart = useCallback(e => { touchX.current = e.touches[0].clientX; }, []);
+  const onTouchEnd   = useCallback(e => {
     if (touchX.current === null) return;
     const dx = e.changedTouches[0].clientX - touchX.current;
-    if (Math.abs(dx) > 40) dx < 0 ? nextPhoto(e) : prevPhoto(e);
     touchX.current = null;
-  };
+    if (Math.abs(dx) > 40) {
+      e.preventDefault(); // prevent synthetic click → navigation after swipe
+      dx < 0 ? setPhotoIdx(i => (i + 1) % photoCount) : setPhotoIdx(i => (i - 1 + photoCount) % photoCount);
+    }
+  }, [photoCount]);
 
   return (
     <article
@@ -197,4 +208,6 @@ export default function ListingCard({ listing, isSaved, onSave, userPrefs = null
       </footer>
     </article>
   );
-}
+});
+
+export default ListingCard;

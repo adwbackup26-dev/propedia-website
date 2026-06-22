@@ -67,11 +67,19 @@ export function useListings(initialFilters = DEFAULT_FILTERS) {
 }
 
 export function getVOWSession() {
-  try { return localStorage.getItem('propedia_vow') === '1'; } catch { return false; }
+  try {
+    if (localStorage.getItem('propedia_vow') === '1') return true;
+  } catch { /* localStorage blocked (private mode, quota, ITP) */ }
+  // Fall back to cookie written by setVOWSession
+  try {
+    return document.cookie.split(';').some(c => c.trim().startsWith('propedia_vow=1'));
+  } catch { return false; }
 }
 export function setVOWSession(prefs) {
+  try { localStorage.setItem('propedia_vow', '1'); } catch { /* ignore */ }
   try {
-    localStorage.setItem('propedia_vow', '1');
+    // Cookie as belt-and-suspenders: persists if localStorage is unavailable
+    document.cookie = 'propedia_vow=1; path=/; max-age=' + (60 * 60 * 24 * 365);
     if (prefs) localStorage.setItem('propedia_prefs', JSON.stringify(prefs));
   } catch { /* ignore */ }
 }

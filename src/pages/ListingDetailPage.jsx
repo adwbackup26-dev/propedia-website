@@ -560,7 +560,7 @@ export default function ListingDetailPage() {
       <div style={{ textAlign:'center' }}>
         <i className="ti ti-home-off" style={{ fontSize:48, display:'block', marginBottom:16, color:'rgba(255,255,255,.2)' }}/>
         <h1 style={{ fontSize:24, fontWeight:500, marginBottom:8 }}>{error||'Listing not found'}</h1>
-        <button onClick={()=>navigate('/')} style={{ marginTop:20, padding:'12px 28px', background:'#00B4A8', color:'#fff', border:'none', borderRadius:7, fontSize:14, fontWeight:500, cursor:'pointer' }}>← Back to listings</button>
+        <button onClick={()=>navigate(-1)} style={{ marginTop:20, padding:'12px 28px', background:'#00B4A8', color:'#fff', border:'none', borderRadius:7, fontSize:14, fontWeight:500, cursor:'pointer' }}>← Back to Listings</button>
       </div>
     </div>
   );
@@ -599,7 +599,7 @@ export default function ListingDetailPage() {
       <header style={{ position:'sticky', top:0, zIndex:200, height:46, background:'#0C0D10', borderBottom:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', padding:'0 16px', gap:10 }}>
         <Link to="/" style={{ fontSize:18, fontWeight:600, color:'#00B4A8', letterSpacing:'-.02em', textDecoration:'none', flexShrink:0 }}>Propedia</Link>
         <span style={{ color:'rgba(255,255,255,.15)', fontSize:16 }}>›</span>
-        <button onClick={()=>navigate('/')} style={{ fontSize:12, color:'rgba(255,255,255,.5)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>Listings</button>
+        <button onClick={()=>navigate(-1)} style={{ fontSize:12, color:'rgba(255,255,255,.5)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>← Back to Listings</button>
         <button onClick={()=>toggleSave(listing)} style={{ marginLeft:'auto', height:32, padding:'0 14px', border:'1px solid', borderRadius:6, fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:'inherit', flexShrink:0, borderColor:saved?'#00B4A8':'rgba(255,255,255,.14)', background:saved?'rgba(0,180,168,.12)':'none', color:saved?'#00B4A8':'rgba(255,255,255,.55)', display:'flex', alignItems:'center', gap:5, transition:'all .2s' }}>
           <i className={`ti ${saved?'ti-check':'ti-plus'}`} style={{ fontSize:12 }}/>{saved?'Saved':'Save'}
         </button>

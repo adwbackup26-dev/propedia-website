@@ -687,7 +687,7 @@ export default function ListingsPage() {
       <header className="mp-nav" role="banner">
         <Link to="/" className="mp-nav__logo" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
           <img src={propediaLogo} alt="Propedia" style={{ height:40, width:'auto', display:'block' }} />
-          <span style={{ fontSize:18, fontWeight:700, color:'#00B4A8', letterSpacing:'-.02em' }}>Propedia</span>
+          <span className="mp-nav__wordmark" style={{ fontSize:18, fontWeight:700, color:'#00B4A8', letterSpacing:'-.02em' }}>Propedia</span>
         </Link>
 
         <div ref={searchWrapRef} style={{ position:'relative', flex:1, minWidth:0 }}>

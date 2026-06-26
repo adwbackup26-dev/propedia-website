@@ -166,7 +166,20 @@
 
 @media (max-width: 480px) {
   /* Smallest phones: even tighter */
-  .mp-nav__signup { font-size: 11px; padding: 0 12px; }
+
+  /* Hide "Propedia" wordmark — keep icon only, frees ~100px for search */
+  .mp-nav__wordmark { display: none; }
+
+  /* Hide "Sign up free" from nav — VOW wall surfaces naturally on interaction */
+  .mp-nav__signup { display: none; }
+
+  /* Toolbar: wrap so count is on its own row above the view/sort buttons */
+  .listings-toolbar { flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .listings-count { width: 100%; font-size: 12px; }
+
+  /* View-toggle: icon-only buttons, smaller */
+  .view-btn { min-height: 36px; min-width: 36px; font-size: 11px; }
+
   .filter-panel { row-gap: 6px; }
 
   /* VOW modal: comfortable on small phones */

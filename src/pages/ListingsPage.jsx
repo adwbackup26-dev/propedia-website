@@ -637,6 +637,7 @@ export default function ListingsPage() {
       propertySubType: '',   // structures supersedes legacy propertySubType
       sortBy:          sortOpt.sortBy,
       sortDir:         sortOpt.sortDir,
+      city:            m.city || '',
     });
     setModalValues(m);
     // sync URL — use city from modal, preserve search/postal

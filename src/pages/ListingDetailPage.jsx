@@ -6,7 +6,7 @@ import AvailableButton from '../components/AvailableButton.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import PriceHistorySection from '../components/PriceHistorySection.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
-import Logo from '../components/Logo.jsx';
+import propediaLogo from '/ITERATION-LOGO.png.png';
 import { useCompare, getVOWSession } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
 import '../styles/listings.css';
@@ -664,9 +664,8 @@ export default function ListingDetailPage() {
 
       {/* Nav */}
       <header style={{ position:'sticky', top:0, zIndex:200, height:46, background:'#0C0D10', borderBottom:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', padding:'0 16px', gap:10 }}>
-        <Link to="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', flexShrink:0 }}>
-          <Logo size={28} />
-          <span style={{ fontSize:18, fontWeight:600, color:'#00B4A8', letterSpacing:'-.02em' }}>Propedia</span>
+        <Link to="/" style={{ display:'flex', alignItems:'center', textDecoration:'none', flexShrink:0 }}>
+          <img src={propediaLogo} alt="Propedia" style={{ height:36, width:'auto', display:'block' }} />
         </Link>
         <span style={{ color:'rgba(255,255,255,.15)', fontSize:16 }}>›</span>
         <button onClick={()=>navigate(-1)} style={{ fontSize:12, color:'rgba(255,255,255,.5)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>← Back to Listings</button>

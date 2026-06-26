@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../components/Logo.jsx';
+import propediaLogo from '/ITERATION-LOGO.png.png';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import L from 'leaflet';
@@ -376,8 +376,8 @@ export default function MapSearchPage() {
           ← Back
         </button>
 
-        <span style={{ fontWeight:700, fontSize:14, flex:1, display:'flex', alignItems:'center', gap:6 }}>
-          <Logo size={24} />
+        <span style={{ fontWeight:700, fontSize:14, flex:1, display:'flex', alignItems:'center', gap:8 }}>
+          <img src={propediaLogo} alt="Propedia" style={{ height:28, width:'auto', display:'block' }} />
           Map Search
         </span>
 

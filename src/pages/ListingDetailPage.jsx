@@ -44,15 +44,37 @@ const RATE_PRESETS = [
   { label:'Big bank avg', rate:4.75, note:'RBC/TD/BMO avg' },
 ];
 
+function calcDOM(listing) {
+  if (listing.DaysOnMarket > 0) return listing.DaysOnMarket;
+  if (listing.OriginalEntryTimestamp) {
+    const ms = Date.now() - new Date(listing.OriginalEntryTimestamp).getTime();
+    return Math.max(0, Math.floor(ms / 86400000));
+  }
+  return null;
+}
+
 function MarketVelocity({ listing }) {
-  const dom = listing.DaysOnMarket ?? 0;
+  const dom  = calcDOM(listing);
   const city = listing.City || '';
   const AREA_AVG = { Toronto:18, Mississauga:22, Brampton:20, Oakville:16, Burlington:19, Vaughan:17, Markham:15, 'Richmond Hill':16, Ajax:20, Pickering:21, Whitby:22, Oshawa:25, Milton:18, default:20 };
-  const areaAvg = AREA_AVG[city.split(' ')[0]] || AREA_AVG.default;
-  const ratio   = dom / areaAvg;
-  const barW    = Math.min(Math.round(ratio * 100), 200);
+  const areaAvg  = AREA_AVG[city.split(' ')[0]] || AREA_AVG.default;
+
+  if (dom === null) {
+    return (
+      <div style={{ background:'#161719', borderRadius:10, border:'1px solid rgba(255,255,255,.06)', padding:'15px 17px', marginBottom:11 }}>
+        <div style={{ fontSize:9, fontWeight:600, letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.28)', marginBottom:13, paddingBottom:9, borderBottom:'1px solid rgba(255,255,255,.05)', display:'flex', alignItems:'center', gap:7 }}>
+          <i className="ti ti-clock" style={{ fontSize:13, color:'#00B4A8' }}/>Market velocity
+        </div>
+        <div style={{ fontSize:12, color:'rgba(255,255,255,.3)', padding:'8px 0' }}>Days on market data not available for this listing.</div>
+      </div>
+    );
+  }
+
+  const barPct   = Math.min(Math.round(dom / areaAvg * 100), 100);
   const domColor = dom <= areaAvg * 0.5 ? '#34D399' : dom <= areaAvg ? '#F59E0B' : '#F87171';
   const verdict  = dom <= areaAvg * 0.5 ? 'Moving fast' : dom <= areaAvg ? 'Normal pace' : 'Sitting above avg';
+  const source   = listing.DaysOnMarket > 0 ? null : listing.OriginalEntryTimestamp ? '(calculated from listing date)' : null;
+
   return (
     <div style={{ background:'#161719', borderRadius:10, border:'1px solid rgba(255,255,255,.06)', padding:'15px 17px', marginBottom:11 }}>
       <div style={{ fontSize:9, fontWeight:600, letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.28)', marginBottom:13, paddingBottom:9, borderBottom:'1px solid rgba(255,255,255,.05)', display:'flex', alignItems:'center', gap:7 }}>
@@ -61,7 +83,7 @@ function MarketVelocity({ listing }) {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:12 }}>
         <div>
           <div style={{ fontSize:28, fontWeight:600, color:domColor, lineHeight:1 }}>{dom}<span style={{ fontSize:13, fontWeight:400, color:'rgba(255,255,255,.35)', marginLeft:4 }}>days</span></div>
-          <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginTop:4 }}>{verdict}</div>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginTop:4 }}>{verdict}{source && <span style={{ fontSize:10, color:'rgba(255,255,255,.2)', marginLeft:5 }}>{source}</span>}</div>
         </div>
         <div style={{ textAlign:'right' }}>
           <div style={{ fontSize:11, color:'rgba(255,255,255,.35)' }}>Area avg</div>
@@ -69,7 +91,7 @@ function MarketVelocity({ listing }) {
         </div>
       </div>
       <div style={{ position:'relative', height:8, background:'rgba(255,255,255,.07)', borderRadius:4, overflow:'visible', marginBottom:6 }}>
-        <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${Math.min(barW, 100)}%`, background:domColor, borderRadius:4, transition:'width .4s' }}/>
+        <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${barPct}%`, background:domColor, borderRadius:4, transition:'width .4s' }}/>
         <div style={{ position:'absolute', top:-4, left:'100%', transform:'translateX(-1px)', width:2, height:16, background:'rgba(255,255,255,.2)', borderRadius:1 }}/>
       </div>
       <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'rgba(255,255,255,.25)' }}>

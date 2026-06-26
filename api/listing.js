@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     'YearBuilt',
     'ParkingTotal',
     'LivingAreaRange',
-    'CloseDate', 'DaysOnMarket', 'ModificationTimestamp',
+    'CloseDate', 'DaysOnMarket', 'OriginalEntryTimestamp', 'ModificationTimestamp',
     'ListAgentFullName', 'ListOfficeName',
     'PublicRemarks',
     'Latitude', 'Longitude',

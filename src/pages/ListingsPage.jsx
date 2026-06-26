@@ -407,6 +407,7 @@ function urlToModal() {
     baths:      sp.get('baths')    || '',
     parking:    sp.get('parking')  || '',
     structures: stRaw ? stRaw.split(',').filter(Boolean) : [],
+    city:       sp.get('city')     || '',
   };
 }
 
@@ -638,10 +639,10 @@ export default function ListingsPage() {
       sortDir:         sortOpt.sortDir,
     });
     setModalValues(m);
-    // sync URL — preserve city/search/postal already in URL, add modal fields
+    // sync URL — use city from modal, preserve search/postal
     const sp = new URLSearchParams(window.location.search);
     const qs = modalToURL(m, {
-      city:       sp.get('city')   || '',
+      city:       m.city || '',
       search:     sp.get('search') || '',
       postalCode: sp.get('postal') || '',
       sort:       sortId,
@@ -857,6 +858,7 @@ export default function ListingsPage() {
         onClose={() => setModalOpen(false)}
         onApply={handleApplyFilters}
         initialValues={modalValues}
+        citySuggestions={AC_ALL}
       />
     </>
   );

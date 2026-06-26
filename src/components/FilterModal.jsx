@@ -1,6 +1,6 @@
 // src/components/FilterModal.jsx — bottom-sheet filter modal for Propedia
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export const PROP_TYPES = [
   { id: 'res-sale',  label: 'Buy',             sub: 'Residential Sale',   tx: 'For Sale',  pt: 'Residential' },
@@ -22,6 +22,7 @@ export const DEFAULT_MODAL = {
   baths:      '',
   parking:    '',
   structures: [],
+  city:       '',
 };
 
 // ── style tokens ──────────────────────────────────────────────────────────────
@@ -50,16 +51,51 @@ const inp = {
 };
 
 // ── component ─────────────────────────────────────────────────────────────────
-export default function FilterModal({ isOpen, onClose, onApply, initialValues }) {
+export default function FilterModal({ isOpen, onClose, onApply, initialValues, citySuggestions = [] }) {
   const [local, setLocal] = useState(DEFAULT_MODAL);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const searchRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) setLocal(initialValues ?? DEFAULT_MODAL);
+    if (isOpen) {
+      setLocal(initialValues ?? DEFAULT_MODAL);
+      setSearchInput(initialValues?.city || '');
+      setSearchOpen(false);
+    }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handleClickOutside = e => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false);
+      }
+    };
+    if (searchOpen) document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [searchOpen]);
 
   if (!isOpen) return null;
 
   const set = patch => setLocal(p => ({ ...p, ...patch }));
+
+  const filteredSuggestions = searchInput.trim()
+    ? citySuggestions.filter(s =>
+        s.label.toLowerCase().includes(searchInput.toLowerCase()) ||
+        (s.searchCity && s.searchCity.toLowerCase().includes(searchInput.toLowerCase()))
+      ).slice(0, 8)
+    : [];
+
+  const handleSelectCity = s => {
+    set({ city: s.searchCity || s.label });
+    setSearchInput(s.searchCity || s.label);
+    setSearchOpen(false);
+  };
+
+  const handleRemoveCity = () => {
+    set({ city: '' });
+    setSearchInput('');
+  };
 
   const isRent      = local.propType === 'res-rent' || local.propType === 'com-rent';
   const showStructure = !isRent;
@@ -81,7 +117,20 @@ export default function FilterModal({ isOpen, onClose, onApply, initialValues })
     !!local.baths,
     !!local.parking,
     local.structures.length > 0,
+    !!local.city,
   ].filter(Boolean).length;
+
+  // Format applied filters for display
+  const appliedLabels = [];
+  if (local.city) appliedLabels.push({ key: 'city', label: local.city });
+  if (local.minPrice || local.maxPrice) {
+    const priceLabel = [local.minPrice || '—', local.maxPrice || '—'].join('–');
+    appliedLabels.push({ key: 'price', label: `$${priceLabel}` });
+  }
+  if (local.beds) appliedLabels.push({ key: 'beds', label: `${local.beds} bed${local.beds !== '1' ? 's' : ''}` });
+  if (local.baths) appliedLabels.push({ key: 'baths', label: `${local.baths} bath${local.baths !== '1' ? 's' : ''}` });
+  if (local.parking) appliedLabels.push({ key: 'parking', label: `${local.parking} parking` });
+  if (local.structures.length > 0) appliedLabels.push({ key: 'struct', label: local.structures.join(', ') });
 
   return (
     <>
@@ -119,6 +168,91 @@ export default function FilterModal({ isOpen, onClose, onApply, initialValues })
             }}
           >×</button>
         </div>
+
+        {/* Search section */}
+        <div style={{ padding:'16px 20px 0', flexShrink:0, borderBottom:'1px solid rgba(255,255,255,.08)' }}>
+          <span style={lbl}>Search</span>
+          <div style={{ position:'relative', marginBottom:12 }}>
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="City, address, postal code..."
+              value={searchInput}
+              onChange={e => { setSearchInput(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+              style={{ ...inp, paddingRight:40 }}
+            />
+            {searchInput && (
+              <button
+                onClick={() => { setSearchInput(''); set({ city: '' }); }}
+                style={{
+                  position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                  width:24, height:24, border:'none', background:'transparent',
+                  color:'rgba(255,255,255,.4)', fontSize:18, cursor:'pointer', padding:0,
+                }}
+              >
+                ×
+              </button>
+            )}
+            {searchOpen && filteredSuggestions.length > 0 && (
+              <div style={{
+                position:'absolute', top:'100%', left:0, right:0, marginTop:4,
+                background:'#0D0E11', border:'1px solid rgba(0,180,168,.2)',
+                borderRadius:8, maxHeight:200, overflowY:'auto', zIndex:10,
+              }}>
+                {filteredSuggestions.map(s => (
+                  <button
+                    key={s.label}
+                    onClick={() => handleSelectCity(s)}
+                    style={{
+                      width:'100%', textAlign:'left', padding:'12px', border:'none',
+                      background:'transparent', color:'rgba(255,255,255,.8)',
+                      fontSize:13, cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,.04)',
+                    }}
+                  >
+                    {s.label}
+                    {s.display && <div style={{ fontSize:10, color:'rgba(255,255,255,.3)' }}>{s.display}</div>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Applied filters display */}
+        {appliedLabels.length > 0 && (
+          <div style={{ padding:'12px 20px', background:'rgba(0,180,168,.04)', borderBottom:'1px solid rgba(0,180,168,.1)', flexShrink:0 }}>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {appliedLabels.map(f => (
+                <div key={f.key} style={{
+                  display:'flex', alignItems:'center', gap:6,
+                  background:'rgba(0,180,168,.15)', border:'1px solid rgba(0,180,168,.25)',
+                  borderRadius:20, padding:'6px 10px 6px 12px', fontSize:12,
+                  color:'#00B4A8',
+                }}>
+                  {f.label}
+                  <button
+                    onClick={() => {
+                      if (f.key === 'city') handleRemoveCity();
+                      else if (f.key === 'price') set({ minPrice:'', maxPrice:'' });
+                      else if (f.key === 'beds') set({ beds:'' });
+                      else if (f.key === 'baths') set({ baths:'' });
+                      else if (f.key === 'parking') set({ parking:'' });
+                      else if (f.key === 'struct') set({ structures:[] });
+                    }}
+                    style={{
+                      width:16, height:16, border:'none', background:'transparent',
+                      color:'#00B4A8', fontSize:14, cursor:'pointer', padding:0,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Scrollable body */}
         <div style={{ overflowY:'auto', padding:'20px 20px 8px', flex:1, WebkitOverflowScrolling:'touch' }}>

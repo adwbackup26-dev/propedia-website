@@ -75,6 +75,18 @@ export default function FilterModal({ isOpen, onClose, onApply, initialValues, c
     return () => document.removeEventListener('click', handleClickOutside);
   }, [searchOpen]);
 
+  // Auto-apply search input as user types (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput.trim() && searchInput !== local.city) {
+        const newLocal = { ...local, city: searchInput };
+        setLocal(newLocal);
+        onApply(newLocal);
+      }
+    }, 300); // 300ms debounce
+    return () => clearTimeout(timer);
+  }, [searchInput]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!isOpen) return null;
 
   const set = patch => setLocal(p => ({ ...p, ...patch }));

@@ -58,22 +58,26 @@ export default async function handler(req, res) {
   if (search)     filters.push(`contains(StreetName,'${search.replace(/'/g, "''")}')`);
 
   // structures: comma-separated list → PropertySubType OR filter
-  // mapping: Freehold→PropertyType, Detached/Semi-Detached/Townhouse/Condo→PropertySubType
+  // mapping: Freehold→PropertyType, Detached/Semi-Detached/Townhouse/Condo→PropertySubType, Basement→PropertySubType variants
   if (structures) {
     const list = structures.split(',').map(s => s.trim()).filter(Boolean);
     if (list.length > 0) {
       const SUBTYPE_MAP = {
-        'Freehold':      null,                 // handled via PropertyType
-        'Detached':      'Detached',
-        'Semi-Detached': 'Semi-Detached',
-        'Townhouse':     'Att/Row/Twnhouse',
-        'Condo':         null,                 // handled specially below (two TRREB values)
+        'Freehold':                null,                 // handled via PropertyType
+        'Detached':                'Detached',
+        'Semi-Detached':           'Semi-Detached',
+        'Townhouse':               'Att/Row/Twnhouse',
+        'Condo':                   null,                 // handled specially below (two TRREB values)
+        'Basement / Lower Unit':   null,                 // handled specially below (multiple variants)
       };
       const subtypeClauses = list
         .filter(s => SUBTYPE_MAP[s] !== undefined && SUBTYPE_MAP[s] !== null)
         .map(s => `PropertySubType eq '${SUBTYPE_MAP[s]}'`);
       if (list.includes('Condo')) {
         subtypeClauses.push("(PropertySubType eq 'Condo Apt' or PropertySubType eq 'Condo Apartment' or PropertySubType eq 'Co-op Apt')");
+      }
+      if (list.includes('Basement / Lower Unit')) {
+        subtypeClauses.push("(PropertySubType eq 'Basement' or PropertySubType eq 'Bsmt' or PropertySubType eq 'Lower')");
       }
       const hasFreehold = list.includes('Freehold');
       const allClauses = [

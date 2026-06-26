@@ -26,8 +26,8 @@ const ListIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="c
 //   searchCity  — city param sent to API (may differ from display city)
 //   searchTerm  — overrides label for the API `search` param
 
-function ac(label, display, type, city, searchTerm) {
-  return { label, display, type, city: city || '', searchTerm: searchTerm || label };
+function ac(label, display, type, city, searchTerm, searchCity) {
+  return { label, display, type, city: city || '', searchTerm: searchTerm || label, searchCity: searchCity || '' };
 }
 
 const AC_ALL = [
@@ -69,12 +69,12 @@ const AC_ALL = [
   ac('Cambridge',      'City',        'city'),
 
   // ── Toronto neighbourhoods ────────────────────────────────────────────────
-  // TRREB stores these pre-amalgamation districts as their own City values,
-  // so they need City eq 'Etobicoke' etc., not a StreetName contains filter.
-  ac('Etobicoke',            'Toronto District', 'city'),
-  ac('Scarborough',          'Toronto District', 'city'),
-  ac('North York',           'Toronto District', 'city'),
-  ac('East York',            'Toronto District', 'city'),
+  // TRREB stores Toronto districts as area codes: W=Etobicoke/West, E=Scarborough/East, C=Central/NorthYork
+  // searchCity is the prefix passed to startswith(City,'...') in the API
+  ac('Etobicoke',            'Toronto District', 'city', '', '', 'Toronto W'),
+  ac('Scarborough',          'Toronto District', 'city', '', '', 'Toronto E'),
+  ac('North York',           'Toronto District', 'city', '', '', 'Toronto C'),
+  ac('East York',            'Toronto District', 'city', '', '', 'Toronto E0'),
   ac('Downtown Toronto',     'Toronto',    'hood', 'Toronto', 'Downtown'),
   ac('Midtown Toronto',      'Toronto',    'hood', 'Toronto', 'Midtown'),
   ac('The Beaches',          'Toronto',    'hood', 'Toronto', 'Beaches'),
@@ -536,7 +536,10 @@ export default function ListingsPage() {
   const [userPrefs,  setUserPrefs]  = useState(() => getUserPrefs());
   const [search,     setSearch]     = useState(() => {
     const sp = new URLSearchParams(window.location.search);
-    return sp.get('search') || sp.get('city') || '';
+    const cityParam = sp.get('city') || '';
+    // Reverse-map TRREB prefix codes to friendly display labels
+    const cityLabel = AC_ALL.find(e => e.searchCity && e.searchCity === cityParam)?.label || cityParam;
+    return sp.get('search') || cityLabel;
   });
   const [acOpen,     setAcOpen]     = useState(false);
   const [acIdx,      setAcIdx]      = useState(-1);
@@ -577,7 +580,7 @@ export default function ListingsPage() {
     let patch;
     switch (s.type) {
       case 'city':
-        patch = { city: s.label, search: '', postalCode: '' }; break;
+        patch = { city: s.searchCity || s.label, search: '', postalCode: '' }; break;
       case 'region':
         patch = { city: '', search: '', postalCode: '' }; break;
       case 'hood':

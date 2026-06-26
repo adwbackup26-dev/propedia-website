@@ -6,7 +6,7 @@ import AvailableButton from '../components/AvailableButton.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import PriceHistorySection from '../components/PriceHistorySection.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
-import propediaLogo from '/ITERATION-LOGO.png.png';
+import propediaLogo from '/ITERATION-LOGO.png';
 import { useCompare, getVOWSession } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
 import '../styles/listings.css';

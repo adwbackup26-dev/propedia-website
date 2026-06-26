@@ -7,7 +7,7 @@ import FilterModal, { PROP_TYPES, DEFAULT_MODAL } from '../components/FilterModa
 import ListingCard, { ListingCardSkeleton } from '../components/ListingCard.jsx';
 import CompareBar from '../components/CompareBar.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
-import propediaLogo from '/ITERATION-LOGO.png.png';
+import propediaLogo from '/ITERATION-LOGO.png';
 import { useListings, useCompare, getVOWSession, getUserPrefs, DEFAULT_FILTERS as DEFAULT_FILTERS_SHAPE } from '../hooks/useListings.js';
 import { computeMatchScore } from '../utils/format.js';
 import '../styles/listings.css';

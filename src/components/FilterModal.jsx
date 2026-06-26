@@ -12,7 +12,7 @@ export const PROP_TYPES = [
 const BEDS     = [{ v:'', l:'Any' }, { v:'1', l:'1' }, { v:'2', l:'2' }, { v:'3', l:'3' }, { v:'4', l:'4+' }];
 const BATHS    = [{ v:'', l:'Any' }, { v:'1', l:'1' }, { v:'2', l:'2' }, { v:'3', l:'3+' }];
 const PARKING  = [{ v:'', l:'Any' }, { v:'0', l:'0' }, { v:'1', l:'1' }, { v:'2', l:'2' }, { v:'3', l:'3+' }];
-export const STRUCTURES = ['Freehold', 'Detached', 'Semi-Detached', 'Townhouse', 'Condo', 'Basement / Lower Unit'];
+export const STRUCTURES = ['Freehold', 'Detached', 'Semi-Detached', 'Townhouse', 'Condo']; // 'Basement / Lower Unit' hidden pending TRREB data
 
 export const DEFAULT_MODAL = {
   propType:   'res-sale',

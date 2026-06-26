@@ -87,14 +87,20 @@ export default function FilterModal({ isOpen, onClose, onApply, initialValues, c
     : [];
 
   const handleSelectCity = s => {
-    set({ city: s.searchCity || s.label });
+    const newLocal = { ...local, city: s.searchCity || s.label };
+    setLocal(newLocal);
     setSearchInput(s.searchCity || s.label);
     setSearchOpen(false);
+    // Immediately apply filter on city selection
+    onApply(newLocal);
   };
 
   const handleRemoveCity = () => {
-    set({ city: '' });
+    const newLocal = { ...local, city: '' };
+    setLocal(newLocal);
     setSearchInput('');
+    // Immediately apply filter on city removal
+    onApply(newLocal);
   };
 
   const isRent      = local.propType === 'res-rent' || local.propType === 'com-rent';
@@ -233,12 +239,17 @@ export default function FilterModal({ isOpen, onClose, onApply, initialValues, c
                   {f.label}
                   <button
                     onClick={() => {
-                      if (f.key === 'city') handleRemoveCity();
-                      else if (f.key === 'price') set({ minPrice:'', maxPrice:'' });
-                      else if (f.key === 'beds') set({ beds:'' });
-                      else if (f.key === 'baths') set({ baths:'' });
-                      else if (f.key === 'parking') set({ parking:'' });
-                      else if (f.key === 'struct') set({ structures:[] });
+                      let newLocal = { ...local };
+                      if (f.key === 'city') {
+                        handleRemoveCity();
+                        return;
+                      } else if (f.key === 'price') newLocal = { ...local, minPrice:'', maxPrice:'' };
+                      else if (f.key === 'beds') newLocal = { ...local, beds:'' };
+                      else if (f.key === 'baths') newLocal = { ...local, baths:'' };
+                      else if (f.key === 'parking') newLocal = { ...local, parking:'' };
+                      else if (f.key === 'struct') newLocal = { ...local, structures:[] };
+                      setLocal(newLocal);
+                      onApply(newLocal);
                     }}
                     style={{
                       width:16, height:16, border:'none', background:'transparent',

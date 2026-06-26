@@ -6,6 +6,8 @@ import AvailableButton from '../components/AvailableButton.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import PriceHistorySection from '../components/PriceHistorySection.jsx';
 import VOWSignupWall from '../components/VOWSignupWall.jsx';
+import Signal from '../components/Signal.jsx';
+import PriceSqFt from '../components/PriceSqFt.jsx';
 import propediaLogo from '/ITERATION-LOGO.png';
 import { useCompare, getVOWSession } from '../hooks/useListings.js';
 import { formatPrice, formatAddress, formatCityLine, propertyTypeLabel, estimateMortgage } from '../utils/format.js';
@@ -42,119 +44,41 @@ const RATE_PRESETS = [
   { label:'Big bank avg', rate:4.75, note:'RBC/TD/BMO avg' },
 ];
 
-function ScoreGauge({ score = 82, label = 'Top 18% of listings' }) {
-  const cx=90, cy=90, r=68;
-  const pt = d => ({ x:+(cx+r*Math.cos(d*Math.PI/180)).toFixed(1), y:+(cy+r*Math.sin(d*Math.PI/180)).toFixed(1) });
-  const ts = pt(210), te = pt(-30), fe = pt(210-(score/100)*240);
-  const fl = (score/100)*240 > 180 ? 1 : 0;
-  const breakdown = [{ l:'Value',s:72 },{ l:'Location',s:88 },{ l:'Investment',s:81 },{ l:'Condition',s:85 }];
+function MarketVelocity({ listing }) {
+  const dom = listing.DaysOnMarket ?? 0;
+  const city = listing.City || '';
+  const AREA_AVG = { Toronto:18, Mississauga:22, Brampton:20, Oakville:16, Burlington:19, Vaughan:17, Markham:15, 'Richmond Hill':16, Ajax:20, Pickering:21, Whitby:22, Oshawa:25, Milton:18, default:20 };
+  const areaAvg = AREA_AVG[city.split(' ')[0]] || AREA_AVG.default;
+  const ratio   = dom / areaAvg;
+  const barW    = Math.min(Math.round(ratio * 100), 200);
+  const domColor = dom <= areaAvg * 0.5 ? '#34D399' : dom <= areaAvg ? '#F59E0B' : '#F87171';
+  const verdict  = dom <= areaAvg * 0.5 ? 'Moving fast' : dom <= areaAvg ? 'Normal pace' : 'Sitting above avg';
   return (
-    <div style={{ ...card, padding:'18px 17px 14px', textAlign:'center' }}>
-      <div style={{ ...sh, justifyContent:'center', border:'none', padding:0, marginBottom:4 }}>
-        <i className="ti ti-chart-donut" style={shI}/>Propedia Score
+    <div style={{ background:'#161719', borderRadius:10, border:'1px solid rgba(255,255,255,.06)', padding:'15px 17px', marginBottom:11 }}>
+      <div style={{ fontSize:9, fontWeight:600, letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.28)', marginBottom:13, paddingBottom:9, borderBottom:'1px solid rgba(255,255,255,.05)', display:'flex', alignItems:'center', gap:7 }}>
+        <i className="ti ti-clock" style={{ fontSize:13, color:'#00B4A8' }}/>Market velocity
       </div>
-      <svg viewBox="0 0 180 155" style={{ width:160, height:'auto', display:'block', margin:'0 auto' }}>
-        <path d={`M${ts.x} ${ts.y} A${r} ${r} 0 1 0 ${te.x} ${te.y}`} fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="11" strokeLinecap="round"/>
-        <path d={`M${ts.x} ${ts.y} A${r} ${r} 0 ${fl} 0 ${fe.x} ${fe.y}`} fill="none" stroke="#00B4A8" strokeWidth="11" strokeLinecap="round"/>
-        <circle cx={fe.x} cy={fe.y} r="6" fill="#00B4A8"/>
-        <text x="90" y="88" textAnchor="middle" fontFamily="DM Sans,sans-serif" fontSize="34" fontWeight="600" fill="#fff">{score}</text>
-        <text x="90" y="108" textAnchor="middle" fontFamily="DM Sans,sans-serif" fontSize="11" fill="rgba(255,255,255,.3)">out of 100</text>
-        <text x="19" y="140" textAnchor="middle" fontFamily="DM Sans,sans-serif" fontSize="9" fill="rgba(255,255,255,.2)">0</text>
-        <text x="161" y="140" textAnchor="middle" fontFamily="DM Sans,sans-serif" fontSize="9" fill="rgba(255,255,255,.2)">100</text>
-      </svg>
-      <div style={{ fontSize:11, color:'#00B4A8', fontWeight:500, marginTop:2 }}>{label}</div>
-      <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:7 }}>
-        {breakdown.map(c => (
-          <div key={c.l} style={{ display:'flex', alignItems:'center' }}>
-            <span style={{ width:62, textAlign:'left', color:'rgba(255,255,255,.45)', fontSize:11 }}>{c.l}</span>
-            <div style={{ flex:1, height:4, background:'rgba(255,255,255,.08)', borderRadius:2, overflow:'hidden', margin:'0 8px' }}>
-              <div style={{ height:'100%', width:`${c.s}%`, background:sc(c.s), borderRadius:2 }}/>
-            </div>
-            <span style={{ width:28, textAlign:'right', color:sc(c.s), fontWeight:600, fontSize:11 }}>{c.s}</span>
-          </div>
-        ))}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:12 }}>
+        <div>
+          <div style={{ fontSize:28, fontWeight:600, color:domColor, lineHeight:1 }}>{dom}<span style={{ fontSize:13, fontWeight:400, color:'rgba(255,255,255,.35)', marginLeft:4 }}>days</span></div>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,.4)', marginTop:4 }}>{verdict}</div>
+        </div>
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,.35)' }}>Area avg</div>
+          <div style={{ fontSize:16, fontWeight:500, color:'rgba(255,255,255,.5)' }}>{areaAvg} days</div>
+        </div>
+      </div>
+      <div style={{ position:'relative', height:8, background:'rgba(255,255,255,.07)', borderRadius:4, overflow:'visible', marginBottom:6 }}>
+        <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${Math.min(barW, 100)}%`, background:domColor, borderRadius:4, transition:'width .4s' }}/>
+        <div style={{ position:'absolute', top:-4, left:'100%', transform:'translateX(-1px)', width:2, height:16, background:'rgba(255,255,255,.2)', borderRadius:1 }}/>
+      </div>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'rgba(255,255,255,.25)' }}>
+        <span>0 days</span><span>Area avg ({areaAvg}d)</span>
       </div>
     </div>
   );
 }
 
-function IntelStrip({ listing, monthlyTotal }) {
-  const dom = listing.DaysOnMarket || 0;
-  const isMotivated = dom > 20;
-  const chips = [
-    { l:'Propedia Score', v:'82 / 100',                                        sub:'Top 18% in area',     c:'#00B4A8',              i:'ti-chart-donut' },
-    { l:'Price Verdict',  v:'Fairly Priced',                                   sub:'vs recent comps',     c:'#34D399',              i:'ti-scale' },
-    { l:'True Monthly',   v: monthlyTotal ? fmtM(monthlyTotal) : '—',          sub:'All-in estimate',     c:'rgba(255,255,255,.75)', i:'ti-calculator' },
-    { l:'Signal',         v: isMotivated ? '⚡ Motivated' : '🟢 Act Fast',     sub:`${dom} days listed`,  c: isMotivated?'#F59E0B':'#34D399', i:'ti-flame' },
-    { l:'Investment',     v:'B+',                                               sub:'5yr outlook',         c:'#60A5FA',              i:'ti-trending-up' },
-  ];
-  return (
-    <div style={{ display:'flex', gap:8, padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,.06)', overflowX:'auto', marginBottom:12 }}>
-      {chips.map(c => (
-        <div key={c.l} style={{ flex:1, background:'#161719', borderRadius:8, padding:'11px 12px', border:'1px solid rgba(255,255,255,.06)', minWidth:100 }}>
-          <div style={{ fontSize:9, fontWeight:600, letterSpacing:'.09em', textTransform:'uppercase', color:'rgba(255,255,255,.28)', marginBottom:5 }}>
-            <i className={`ti ${c.i}`} style={{ fontSize:10, marginRight:3, color:c.c }}/>{c.l}
-          </div>
-          <div style={{ fontSize:16, fontWeight:600, color:c.c, marginBottom:3 }}>{c.v}</div>
-          <div style={{ fontSize:10, color:'rgba(255,255,255,.3)' }}>{c.sub}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PriceIntelligence({ listing }) {
-  const price = listing.ListPrice;
-  const orig  = listing.OriginalListPrice;
-  const priceReduced = orig && orig > price;
-  const pctOff = priceReduced ? Math.round((orig-price)/orig*100) : 0;
-  const history = priceReduced
-    ? [{ x:40, p:orig, d:'Original' },{ x:200, p:price, d:'Current' }]
-    : [{ x:40, p:price, d:'Listed'  },{ x:200, p:price, d:'Current' }];
-  const h=65, minP=Math.min(...history.map(pt=>pt.p))*0.995, maxP=Math.max(...history.map(pt=>pt.p))*1.005;
-  const range=maxP-minP||1;
-  const yPos = p => +(h-(p-minP)/range*h).toFixed(1);
-  const pathD = history.map((pt,i)=>`${i===0?'M':'L'}${pt.x} ${yPos(pt.p)}`).join(' ');
-  return (
-    <div style={card}>
-      <div style={sh}><i className="ti ti-chart-bar" style={shI}/>Price Intelligence</div>
-      <div style={{ display:'flex', gap:10, marginBottom:16 }}>
-        <div style={{ flex:1, background:'rgba(255,255,255,.04)', borderRadius:7, padding:'11px 13px', border:'1px solid rgba(255,255,255,.06)' }}>
-          <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(255,255,255,.3)', marginBottom:5 }}>Verdict vs comps</div>
-          <div style={{ fontSize:17, fontWeight:600, color:'#00B4A8', marginBottom:3 }}>Fairly Priced</div>
-          <div style={{ fontSize:11, color:'rgba(255,255,255,.35)' }}>Based on recent area sales</div>
-        </div>
-        <div style={{ flex:1, background:'rgba(255,255,255,.04)', borderRadius:7, padding:'11px 13px', border:'1px solid rgba(255,255,255,.06)' }}>
-          <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(255,255,255,.3)', marginBottom:5 }}>
-            {priceReduced ? 'Price Reduction' : 'List Price'}
-          </div>
-          <div style={{ fontSize:17, fontWeight:600, color: priceReduced?'#34D399':'rgba(255,255,255,.9)', marginBottom:3 }}>
-            {priceReduced ? `-${pctOff}% off ask` : fmt(price)}
-          </div>
-          {priceReduced && <div style={{ fontSize:11, color:'rgba(255,255,255,.35)' }}>Was {fmt(orig)}</div>}
-        </div>
-      </div>
-      <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(255,255,255,.28)', marginBottom:8 }}>Price history</div>
-      <div style={{ background:'rgba(255,255,255,.03)', borderRadius:7, padding:'12px' }}>
-        <svg viewBox="0 0 280 82" style={{ width:'100%', height:60, overflow:'visible' }}>
-          <line x1="0" y1="0"    x2="280" y2="0"    stroke="rgba(255,255,255,.05)" strokeWidth="1"/>
-          <line x1="0" y1={h/2} x2="280" y2={h/2}  stroke="rgba(255,255,255,.05)" strokeWidth="1"/>
-          <line x1="0" y1={h}   x2="280" y2={h}    stroke="rgba(255,255,255,.05)" strokeWidth="1"/>
-          <path d={pathD} fill="none" stroke="#00B4A8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d={`${pathD} L${history[history.length-1].x} ${h} L${history[0].x} ${h} Z`} fill="rgba(0,180,168,.07)"/>
-          {history.map((pt,i) => (
-            <g key={i}>
-              <circle cx={pt.x} cy={yPos(pt.p)} r="4" fill="#00B4A8"/>
-              <text x={pt.x} y={yPos(pt.p)-9} textAnchor="middle" fontFamily="DM Sans,sans-serif" fontSize="9" fill="rgba(255,255,255,.65)">{fmt(pt.p)}</text>
-              <text x={pt.x} y="80"            textAnchor="middle" fontFamily="DM Sans,sans-serif" fontSize="9" fill="rgba(255,255,255,.28)">{pt.d}</text>
-            </g>
-          ))}
-        </svg>
-      </div>
-      <p style={{ fontSize:10, color:'rgba(255,255,255,.2)', marginTop:10, lineHeight:1.6 }}>Fairly Priced verdict based on comparable sales within same postal code and property type, last 6 months, ±25% price band. Data from TRREB. Not financial advice.</p>
-    </div>
-  );
-}
 
 function Calculator({ price, city, propertyType, onTotal }) {
   const isCondo = ['Condo Apt','Condo Townhouse','Co-Op Apt'].includes(propertyType);
@@ -281,56 +205,23 @@ function Calculator({ price, city, propertyType, onTotal }) {
           )}
         </div>
       )}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0 0', borderTop:'1px solid rgba(255,255,255,.1)', marginTop:5 }}>
-        <span style={{ fontSize:13, fontWeight:600 }}>{includeRental&&!isCondo?'Effective Monthly Cost':'True Monthly Cost'}</span>
-        <span style={{ fontSize:17, fontWeight:600 }}>{fmtM(includeRental&&!isCondo?tc.effective:tc.subtotal)}</span>
+      <div style={{ borderTop:'1px solid rgba(255,255,255,.1)', marginTop:5, paddingTop:10 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+          <span style={{ fontSize:13, fontWeight:600 }}>{includeRental&&!isCondo?'Effective Monthly Cost':'True Monthly Cost'}</span>
+          <span style={{ fontSize:17, fontWeight:600 }}>{fmtM(includeRental&&!isCondo?tc.effective:tc.subtotal)}</span>
+        </div>
+        {(()=>{
+          const loRate=Math.max(rate-0.5,1), hiRate=rate+0.5;
+          const calcAt = r => { const p=Math.max(0,price-downAmt),rv=r/100/12,nv=amort*12; const pi=rv>0?Math.round(p*(rv*Math.pow(1+rv,nv))/(Math.pow(1+rv,nv)-1)):Math.round(p/nv); return pi+Math.round(price*0.0085/12)+200+370+330; };
+          const lo=calcAt(loRate), hi=calcAt(hiRate);
+          return <div style={{ fontSize:11, color:'rgba(255,255,255,.35)' }}>Range: {fmtM(lo)}–{fmtM(hi)} depending on rate</div>;
+        })()}
       </div>
-      <p style={{ fontSize:10, color:'rgba(255,255,255,.2)', marginTop:6 }}>Estimates only. Not financial advice.</p>
+      <p style={{ fontSize:10, color:'rgba(255,255,255,.2)', marginTop:6 }}>Estimates only. Range reflects ±0.5% rate variance. Not financial advice.</p>
     </div>
   );
 }
 
-function NegotiateSignal({ listing }) {
-  const dom = listing.DaysOnMarket || 0;
-  const priceReduced = listing.OriginalListPrice && listing.OriginalListPrice > listing.ListPrice;
-  const reduction    = priceReduced ? listing.OriginalListPrice - listing.ListPrice : 0;
-  const domHigh      = dom > 20;
-  const color        = domHigh ? '#F59E0B' : '#34D399';
-  const stats = [
-    ['DOM',        `${dom} days`,              'on market'],
-    ['Price cuts', priceReduced?'1 cut':'None', priceReduced?fmt(reduction)+' off':'No reduction'],
-    ['vs Orig.',   priceReduced?`-${Math.round(reduction/listing.OriginalListPrice*100)}%`:'0%', 'from list price'],
-  ];
-  return (
-    <div style={{ ...card, borderLeft:`3px solid ${color}`, borderRadius:'4px 10px 10px 4px' }}>
-      <div style={sh}><i className="ti ti-flame" style={{ ...shI, color }}/>Negotiate or act fast?</div>
-      <div style={{ display:'flex', gap:10, alignItems:'flex-start', marginBottom:14 }}>
-        <div style={{ width:40, height:40, borderRadius:'50%', background:`rgba(${domHigh?'245,158,11':'52,211,153'},.15)`, border:`2px solid rgba(${domHigh?'245,158,11':'52,211,153'},.4)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:18 }}>
-          {domHigh?'⚡':'🟢'}
-        </div>
-        <div>
-          <div style={{ fontSize:13, fontWeight:600, color, marginBottom:5 }}>
-            {domHigh?'Motivated seller — room to negotiate':'Fresh listing — act quickly'}
-          </div>
-          <div style={{ fontSize:12, color:'rgba(255,255,255,.55)', lineHeight:1.6 }}>
-            {domHigh
-              ? `Listed ${dom} days ago${priceReduced?` with a price reduction of ${fmt(reduction)}`:''}. Consider opening 2–3% below current ask.`
-              : `Listed ${dom===0?'today':`${dom} days ago`}. Fresh listings in this price range move quickly.`}
-          </div>
-        </div>
-      </div>
-      <div style={{ display:'flex', gap:8 }}>
-        {stats.map(([l,v,s]) => (
-          <div key={l} style={{ flex:1, background:`rgba(${domHigh?'245,158,11':'52,211,153'},.08)`, border:`1px solid rgba(${domHigh?'245,158,11':'52,211,153'},.2)`, borderRadius:6, padding:'8px 10px' }}>
-            <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(255,255,255,.28)', marginBottom:3 }}>{l}</div>
-            <div style={{ fontSize:13, fontWeight:600, color:'rgba(255,255,255,.85)' }}>{v}</div>
-            <div style={{ fontSize:10, color:'rgba(255,255,255,.3)' }}>{s}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function PropertyMap({ listing }) {
   const lat=listing.Latitude, lng=listing.Longitude;
@@ -437,46 +328,6 @@ function Neighbourhood() {
   );
 }
 
-function InvestmentAnalysis({ listing }) {
-  const price = listing.ListPrice;
-  const vals  = [
-    { l:'Conservative', rate:3, c:'rgba(0,180,168,.5)' },
-    { l:'Expected',     rate:4, c:'#00B4A8' },
-    { l:'Optimistic',   rate:5, c:'#00D4C6' },
-  ].map(v=>({ ...v, fv:Math.round(price*Math.pow(1+v.rate/100,5)) }));
-  const mx = vals[2].fv;
-  return (
-    <div style={card}>
-      <div style={sh}><i className="ti ti-trending-up" style={shI}/>Investment analysis</div>
-      <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(255,255,255,.28)', marginBottom:10 }}>5-year value projection</div>
-      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18 }}>
-        {vals.map(v=>(
-          <div key={v.l} style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{ fontSize:11, color:'rgba(255,255,255,.4)', width:120, flexShrink:0 }}>{v.l} ({v.rate}%)</span>
-            <div style={{ flex:1, height:28, background:'rgba(255,255,255,.05)', borderRadius:5, overflow:'hidden' }}>
-              <div style={{ height:'100%', width:`${Math.round(v.fv/mx*100)}%`, background:v.c, borderRadius:5, display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:10, fontSize:11, fontWeight:600, color:'#fff', whiteSpace:'nowrap' }}>
-                {fmt(v.fv)}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-        <div style={{ background:'rgba(255,255,255,.04)', borderRadius:7, padding:'11px 13px', border:'1px solid rgba(255,255,255,.06)' }}>
-          <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(255,255,255,.28)', marginBottom:5 }}>Buy vs rent breakeven</div>
-          <div style={{ fontSize:18, fontWeight:600, color:'#60A5FA', marginBottom:3 }}>~4–5 years</div>
-          <div style={{ fontSize:10, color:'rgba(255,255,255,.35)' }}>vs renting comparable</div>
-        </div>
-        <div style={{ background:'rgba(0,180,168,.08)', borderRadius:7, padding:'11px 13px', border:'1px solid rgba(0,180,168,.2)' }}>
-          <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'rgba(0,180,168,.6)', marginBottom:5 }}>Rental income potential</div>
-          <div style={{ fontSize:18, fontWeight:600, color:'#00B4A8', marginBottom:3 }}>${getRentalRange(listing.City)[0]}–${getRentalRange(listing.City)[1]}</div>
-          <div style={{ fontSize:10, color:'rgba(255,255,255,.4)' }}>Estimate based on area</div>
-        </div>
-      </div>
-      <p style={{ fontSize:10, color:'rgba(255,255,255,.2)', marginTop:10 }}>Projections are illustrative. Not financial advice.</p>
-    </div>
-  );
-}
 
 function KeyMetrics({ listing, monthlyTotal, isLease }) {
   return (
@@ -724,29 +575,18 @@ export default function ListingDetailPage() {
           )}
         </div>
 
-        {/* Intel strip — desktop only, active listings only */}
-        {!isSold && (
-          <div className="intel-strip">
-            <IntelStrip listing={listing} monthlyTotal={monthlyTotal}/>
-          </div>
-        )}
 
         {/* Two column */}
         <div className="detail-grid">
           {/* LEFT */}
           <div>
-            {isSold ? (
-              <SoldSummaryCard listing={listing}/>
-            ) : (
-              <>
-                <PriceIntelligence listing={listing}/>
-                {!isLease&&<Calculator price={listing.ListPrice} city={listing.City} propertyType={listing.PropertySubType} onTotal={setMonthlyTotal}/>}
-                <NegotiateSignal listing={listing}/>
-              </>
-            )}
+            {isSold && <SoldSummaryCard listing={listing}/>}
+            <Signal listing={listing}/>
+            <PriceSqFt listing={listing}/>
+            <MarketVelocity listing={listing}/>
+            {!isSold&&!isLease&&<Calculator price={listing.ListPrice} city={listing.City} propertyType={listing.PropertySubType} onTotal={setMonthlyTotal}/>}
             <PropertyMap listing={listing}/>
             <Neighbourhood/>
-            {!isSold&&!isLease&&<InvestmentAnalysis listing={listing}/>}
 
             {/* Property details */}
             <div style={card}>
@@ -789,7 +629,7 @@ export default function ListingDetailPage() {
 
           {/* RIGHT */}
           <div className="detail-right">
-            {!isSold && <ScoreGauge score={82} label={`Top 18% in ${listing.City}`}/>}
+
             <div style={{ ...card, padding:'14px 15px' }}>
               {isSold ? (
                 <>

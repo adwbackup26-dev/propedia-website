@@ -69,10 +69,12 @@ const AC_ALL = [
   ac('Cambridge',      'City',        'city'),
 
   // ── Toronto neighbourhoods ────────────────────────────────────────────────
-  ac('Etobicoke',            'Toronto',    'hood', 'Toronto'),
-  ac('Scarborough',          'Toronto',    'hood', 'Toronto'),
-  ac('North York',           'Toronto',    'hood', 'Toronto'),
-  ac('East York',            'Toronto',    'hood', 'Toronto'),
+  // TRREB stores these pre-amalgamation districts as their own City values,
+  // so they need City eq 'Etobicoke' etc., not a StreetName contains filter.
+  ac('Etobicoke',            'Toronto District', 'city'),
+  ac('Scarborough',          'Toronto District', 'city'),
+  ac('North York',           'Toronto District', 'city'),
+  ac('East York',            'Toronto District', 'city'),
   ac('Downtown Toronto',     'Toronto',    'hood', 'Toronto', 'Downtown'),
   ac('Midtown Toronto',      'Toronto',    'hood', 'Toronto', 'Midtown'),
   ac('The Beaches',          'Toronto',    'hood', 'Toronto', 'Beaches'),

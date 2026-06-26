@@ -686,7 +686,7 @@ export default function ListingsPage() {
       {/* ── Nav ───────────────────────────────────────────────────────── */}
       <header className="mp-nav" role="banner">
         <Link to="/" className="mp-nav__logo" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
-          <img src={propediaLogo} alt="Propedia" style={{ height:40, width:'auto', display:'block' }} />
+          <img src={propediaLogo} alt="Propedia" style={{ height:40, width:'auto', display:'block', mixBlendMode:'screen' }} />
           <span style={{ fontSize:18, fontWeight:700, color:'#00B4A8', letterSpacing:'-.02em' }}>Propedia</span>
         </Link>
 

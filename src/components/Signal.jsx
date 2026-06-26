@@ -12,9 +12,17 @@ function parseSqft(range) {
   return isNaN(n) ? null : n;
 }
 
+function calcDOM(listing) {
+  if (listing.DaysOnMarket > 0) return listing.DaysOnMarket;
+  if (listing.OriginalEntryTimestamp) {
+    return Math.max(0, Math.floor((Date.now() - new Date(listing.OriginalEntryTimestamp).getTime()) / 86400000));
+  }
+  return 0;
+}
+
 function computeSignals(listing, areaCount) {
   const isSold = listing.StandardStatus === 'Closed';
-  const dom    = listing.DaysOnMarket || 0;
+  const dom    = calcDOM(listing);
   const signals = [];
 
   // 1 — Market timing

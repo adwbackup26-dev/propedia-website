@@ -378,6 +378,8 @@ export default function MapSearchPage() {
 
         <span style={{ fontWeight:700, fontSize:14, flex:1, display:'flex', alignItems:'center', gap:8 }}>
           <img src={propediaLogo} alt="Propedia" style={{ height:28, width:'auto', display:'block' }} />
+          <span style={{ color:'#00B4A8', letterSpacing:'-.02em' }}>Propedia</span>
+          <span style={{ color:'rgba(255,255,255,.3)', fontWeight:400 }}>·</span>
           Map Search
         </span>
 
